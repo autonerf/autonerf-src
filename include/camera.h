@@ -32,10 +32,14 @@ struct frame_t {
     size_t              size;
     struct pixel_t *    pixels;
     struct v4l2_buffer  buffer;
+    uint8_t *           filtered;
 };
+
+typedef void(*camera_filter_t)(const struct frame_t * __restrict, uint8_t * dest);
 
 struct camera_t {
     int                 fd;
+    camera_filter_t     filter;
     struct buffer_t *   buffers;
     size_t              buffer_count;
 };
@@ -49,9 +53,25 @@ extern int camera_init(struct camera_t ** camera);
 
 /**
  * Deinitialize a camera structure
+ *
  * @param camera The camera structure to deinitialize
  */
 extern int camera_deinit(struct camera_t ** camera);
+
+/**
+ * Set a filter for the camera
+ *
+ * @param  camera The camera to set a filter for
+ * @param  filter The filter to set
+ */
+extern int camera_set_filter(struct camera_t * camera, camera_filter_t filter);
+
+/**
+ * Unset a camera filter
+ *
+ * @param  camera The camera to unset the filter of
+ */
+extern int camera_unset_filter(struct camera_t * camera);
 
 /**
  * Open a camera

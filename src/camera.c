@@ -35,8 +35,25 @@ camera_init(struct camera_t ** camera)
 {
     (*camera)                   = (struct camera_t *) malloc(sizeof(struct camera_t));
     (*camera)->fd               = -1;
+    (*camera)->filter           = NULL;
     (*camera)->buffers          = NULL;
     (*camera)->buffer_count     = 0;
+
+    return 0;
+}
+
+int
+camera_set_filter(struct camera_t * camera, camera_filter_t filter)
+{
+    camera->filter = filter;
+
+    return 0;
+}
+
+int
+camera_unset_filter(struct camera_t * camera)
+{
+    camera->filter = NULL;
 
     return 0;
 }
@@ -205,12 +222,24 @@ camera_frame_grab(struct camera_t * camera, struct frame_t * frame)
     frame->size   = frame->buffer.bytesused;
     frame->pixels = (struct pixel_t *) camera->buffers[frame->buffer.index].data;
 
+    if (camera->filter) {
+        frame->filtered = (uint8_t *) calloc(frame->size, sizeof(uint8_t));
+        camera->filter(frame, frame->filtered);
+    } else {
+        frame->filtered = NULL;
+    }
+
     return 0;
 }
 
 int
 camera_frame_release(struct camera_t * camera, struct frame_t * frame)
 {
+    if (frame->filtered != NULL) {
+        free(frame->filtered);
+        frame->filtered = NULL;
+    }
+
     if (xioctl(camera->fd, VIDIOC_QBUF, &frame->buffer) < 0) {
         return -1;
     }
