@@ -20,7 +20,7 @@ inline int xioctl(int fd, int request, void * arguments)
     int result;
 
     do {
-        result = ioctl(fd, request, arguments);
+        result = v4l2_ioctl(fd, request, arguments);
     } while (result == -1 && (errno == EINTR || errno == EAGAIN));
 
     if (result == -1) {
