@@ -19,7 +19,6 @@ main(void)
     struct timespec     benchmarks[3];
     double              fps   = 0.0;
     double              delta = 0.0;
-    uint8_t             grayscale[640][480];
 
     // Initialize and open the camera
     camera_init(&camera);

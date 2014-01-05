@@ -14,6 +14,23 @@
 // Project dependencies
 #include <camera.h>
 
+inline int xioctl(int fd, int request, void * arguments)
+{
+    int result;
+
+    do {
+        result = ioctl(fd, request, arguments);
+    } while (result == -1 && (errno == EINTR || errno == EAGAIN));
+
+    if (result == -1) {
+        fprintf(stderr, "%s [%d]\n", strerror(errno), errno);
+
+        return -1;
+    }
+
+    return 0;
+}
+
 int
 camera_init(struct camera_t ** camera)
 {
@@ -183,4 +200,30 @@ camera_frame_grab(struct camera_t * camera, struct frame_t * frame)
     frame->pixels = (struct pixel_t *) camera->buffers[frame->buffer.index].data;
 
     return 0;
+}
+
+int
+camera_frame_release(struct camera_t * camera, struct frame_t * frame)
+{
+    if (xioctl(camera->fd, VIDIOC_QBUF, &frame->buffer) < 0) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int
+camera_start(struct camera_t * camera)
+{
+    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+    return xioctl(camera->fd, VIDIOC_STREAMON, &type);
+}
+
+int
+camera_stop(struct camera_t * camera)
+{
+    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+    return xioctl(camera->fd, VIDIOC_STREAMOFF, &type);
 }

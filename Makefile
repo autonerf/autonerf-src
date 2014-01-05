@@ -7,7 +7,7 @@ EXECUTABLE	= run
 # Compiler settings
 CC			= gcc
 C_FLAGS		= -Wall -Werror -Wextra
-LD_FLAGS	= -lv4l2
+LD_FLAGS	= -lv4l2 -lrt
 INC_FLAGS	= -I$(INCLUDE)
 
 all: $(BUILD)/main.o $(BUILD)/camera.o

@@ -36,23 +36,6 @@ struct camera_t {
     size_t              buffer_count;
 };
 
-extern inline int xioctl(int fd, int request, void * arguments)
-{
-    int result;
-
-    do {
-        result = ioctl(fd, request, arguments);
-    } while (result == -1 && (errno == EINTR || errno == EAGAIN));
-
-    if (result == -1) {
-        fprintf(stderr, "%s [%d]\n", strerror(errno), errno);
-
-        return -1;
-    }
-
-    return 0;
-}
-
 /**
  * Initialize a camera structure
  *
@@ -94,24 +77,14 @@ extern int camera_frame_grab(struct camera_t * camera, struct frame_t * frame);
  *
  * @param  camera The camera to use
  */
-extern inline int camera_start(struct camera_t * camera)
-{
-    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-    return xioctl(camera->fd, VIDIOC_STREAMON, &type);
-}
+int camera_start(struct camera_t * camera);
 
 /**
  * Stop grabbing frames using a camera
  *
  * @param  camera The camera to use
  */
-extern inline int camera_stop(struct camera_t * camera)
-{
-    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-    return xioctl(camera->fd, VIDIOC_STREAMOFF, &type);
-}
+extern int camera_stop(struct camera_t * camera);
 
 /**
  * Release a camera frame
@@ -119,13 +92,6 @@ extern inline int camera_stop(struct camera_t * camera)
  * @param  camera The camera to use
  * @param  frame  The frame to release
  */
-extern inline int camera_frame_release(struct camera_t * camera, struct frame_t * frame)
-{
-    if (xioctl(camera->fd, VIDIOC_QBUF, &frame->buffer) < 0) {
-        return -1;
-    }
-
-    return 0;
-}
+int camera_frame_release(struct camera_t * camera, struct frame_t * frame);
 
 #endif /* AUTONERF_CAMERA_H */
