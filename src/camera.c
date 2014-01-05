@@ -83,8 +83,8 @@ camera_open(struct camera_t * camera, const char * device)
     // Try to set the camera format
     memset(&format, 0, sizeof(struct v4l2_format));
     format.type                 = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    format.fmt.pix.width        = 640;
-    format.fmt.pix.height       = 480;
+    format.fmt.pix.width        = FRAME_WIDTH;
+    format.fmt.pix.height       = FRAME_HEIGHT;
     format.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB24;
     format.fmt.pix.field        = V4L2_FIELD_INTERLACED;
 

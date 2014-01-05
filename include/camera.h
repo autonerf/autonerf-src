@@ -13,6 +13,10 @@
 #include <libv4l2.h>
 #include <linux/videodev2.h>
 
+#define FRAME_WIDTH     640
+#define FRAME_HEIGHT    480
+#define FRAME_SIZE      (FRAME_WIDTH * FRAME_HEIGHT)
+
 struct buffer_t {
     void *  data;
     size_t  size;
