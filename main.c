@@ -7,19 +7,25 @@
 #include <camera.h>
 #include <logger.h>
 
-#ifndef FRAME_COUNT
-    #define FRAME_COUNT 30
-#endif
+void
+red_filter(const struct frame_t * __restrict frame, uint8_t * dest)
+{
+    size_t i = 0;
+
+    for (; i < FRAME_SIZE; i++) {
+        int16_t value   = frame->pixels[i].red - (frame->pixels[i].blue + frame->pixels[i].green);
+                dest[i] = (value < 0) ? 0 : value;
+    }
+}
 
 int
 main(void)
 {
-    int                 i;
     struct frame_t      frame;
     struct camera_t *   camera;
     struct timespec     benchmarks[3];
-    double              fps   = 0.0;
-    double              delta = 0.0;
+    double              delta  = 0.0;
+    FILE *              output = fopen("grayscale.ppm", "w");
 
     // Initialize and open the camera
     camera_init(&camera);
@@ -31,22 +37,25 @@ main(void)
         return -1;
     }
 
-    // Start benchmarking
+    camera_set_filter(camera, red_filter);
+
     camera_start(camera);
+
+    // Start benchmarking
     clock_gettime(CLOCK_REALTIME, &benchmarks[0]);
-    for (i = 0; i < FRAME_COUNT; i++) {
-        camera_frame_grab(camera, &frame);
-        camera_frame_release(camera, &frame);
-    }
+    camera_frame_grab(camera, &frame);
     clock_gettime(CLOCK_REALTIME, &benchmarks[1]);
+
+    fprintf(output, "P5\n640 480 255\n");
+    fwrite(frame.filtered, sizeof(uint8_t), frame.size, output);
+    fclose(output);
+
     camera_stop(camera);
 
     delta = (benchmarks[1].tv_sec - benchmarks[0].tv_sec);
     delta = delta + (((double) (benchmarks[1].tv_nsec - benchmarks[0].tv_nsec)) / 1000000000.0d);
-    fps   = FRAME_COUNT / delta;
 
     printf("Duration: %fs\n", delta);
-    printf("FPS: %f (%d / %f)\n", fps, FRAME_COUNT, delta);
 
     // Close and deinitialize the camera
     camera_close(camera);
