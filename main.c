@@ -5,6 +5,7 @@
 
 // Project dependencies
 #include <camera.h>
+#include <logger.h>
 
 #ifndef FRAME_COUNT
     #define FRAME_COUNT 30
@@ -22,7 +23,13 @@ main(void)
 
     // Initialize and open the camera
     camera_init(&camera);
-    camera_open(camera, "/dev/video0");
+
+    if (camera_open(camera, "/dev/video0")) {
+        LOG_CRITICAL("Could not open camera");
+        camera_deinit(&camera);
+
+        return -1;
+    }
 
     // Start benchmarking
     camera_start(camera);

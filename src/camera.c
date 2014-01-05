@@ -13,6 +13,7 @@
 
 // Project dependencies
 #include <camera.h>
+#include <logger.h>
 
 inline int xioctl(int fd, int request, void * arguments)
 {
@@ -23,12 +24,10 @@ inline int xioctl(int fd, int request, void * arguments)
     } while (result == -1 && (errno == EINTR || errno == EAGAIN));
 
     if (result == -1) {
-        fprintf(stderr, "%s [%d]\n", strerror(errno), errno);
-
-        return -1;
+        LOG_ERROR(strerror(errno));
     }
 
-    return 0;
+    return result;
 }
 
 int
@@ -76,7 +75,7 @@ camera_open(struct camera_t * camera, const char * device)
 
     // Try to open the camera device
     if ((camera->fd = v4l2_open(device, O_RDWR | O_NONBLOCK)) < 0) {
-        perror("v4l2_open");
+        LOG_ERROR(strerror(errno));
 
         return -1;
     }
@@ -89,7 +88,14 @@ camera_open(struct camera_t * camera, const char * device)
     format.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB24;
     format.fmt.pix.field        = V4L2_FIELD_INTERLACED;
 
-    if (xioctl(camera->fd, VIDIOC_S_FMT, &format) < 0) {
+    if (xioctl(camera->fd, VIDIOC_S_FMT, &format) != 0) {
+        return -1;
+    }
+
+    if (format.fmt.pix.pixelformat != V4L2_PIX_FMT_RGB24) {
+        LOG_CRITICAL("libv4l2 did not accept format RGB24, cannot continue");
+        camera_close(camera);
+
         return -1;
     }
 
@@ -127,7 +133,7 @@ camera_open(struct camera_t * camera, const char * device)
         );
 
         if (camera->buffers[camera->buffer_count].data == MAP_FAILED) {
-            perror("mmap");
+            LOG_ERROR(strerror(errno));
 
             return -1;
         }
