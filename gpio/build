@@ -1,5 +1,0 @@
-#!/bin/sh
-
-echo "Compiling application..."
-
-gcc -o autonerfCapeTest src/main.c src/pantilt.c src/launcher.c src/servo.c src/gpio.c src/pwm.c
