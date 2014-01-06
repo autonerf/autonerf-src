@@ -1,0 +1,71 @@
+/*  
+* Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Purpose License Version 2 as
+* published by the Free Software Foundation
+*
+* Original from: github.com/jadonk/validation-scripts/blob/master/test-capemgr/ 
+*
+* Modified by Niek v.d. Straaten to fit the AutoNerf Cape.
+*/
+
+/dts-v1/;
+/plugin/;
+
+/{
+       compatible = "ti,beaglebone", "ti,beaglebone-black";
+       part-number = "DM-GPIO-Test";
+       version = "00A0";
+
+       fragment@0 {
+             target = <&am33xx_pinmux>;
+            
+             __overlay__ {
+                  pinctrl_test: DM_GPIO_Test_Pins {
+			pinctrl-single,pins = <
+
+                0x0c0 0x07 /* 78: OUTPUT MODE7 + PULL-DOWN = Missile 1     */
+                0x0b8 0x07 /* 76: OUTPUT MODE7 + PULL-DOWN = Missile 2     */
+                0x0b0 0x07 /* 74: OUTPUT MODE7 + PULL-DOWN = Missile 3     */
+                0x0a8 0x07 /* 72: OUTPUT MODE7 + PULL-DOWN = Missile 4     */
+                0x0a0 0x07 /* 70: OUTPUT MODE7 + PULL-DOWN = Missile 5     */
+                0x0a4 0x07 /* 71: OUTPUT MODE7 + PULL-DOWN = Missile 6     */
+                0x0ac 0x07 /* 73: OUTPUT MODE7 + PULL-DOWN = Missile 7     */
+                0x0b4 0x07 /* 75: OUTPUT MODE7 + PULL-DOWN = Missile 8     */
+                0x0bc 0x07 /* 77: OUTPUT MODE7 + PULL-DOWN = Missile 9     */
+                0x0c4 0x07 /* 79: OUTPUT MODE7 + PULL-DOWN = Missile 10    */
+                0x0d4 0x17 /* 09: OUTPUT MODE7 + PULL-UP   = ~Disable      */
+                0x090 0x0f /* 66: OUTPUT MODE7             = Run LED       */
+                0x09c 0x0f /* 69: OUTPUT MODE7             = Reload LED    */
+                0x0d4 0x2f /* 08: INPUT  MODE7             = Feedback      */
+                0x150 0x37 /* 02: INPUT  MODE7 + PULL-UP   = Reload switch */
+                0x020 0x0c /* 22: OUTPUT MODE4             = ~PAN PWM      */
+                0x0c8 0x0a /* 80: OUTPUT MODE2             = ~TILT PWM     */
+
+				/* 0x078 0x07   P9_12 60 OUTPUT MODE7 - The LED Output */
+				/* 0x184 0x2f   P9_24 15 INPUT  MODE7 none     - The Button Input */
+				/* 0x034 0x37   P8_11 45 INPUT  MODE7 pullup   - Yellow Wire */
+				/* 0x030 0x27   P8_12 44 INPUT  MODE7 pulldown - Green Wire */
+				/* 0x024 0x2f   P8_13 23 INPUT  MODE7 none     - White Wire */
+                       
+                /* OUTPUT  GPIO(mode7) 0x07 pulldown, 0x17 pullup, 0x?f no pullup/down */
+			    /* INPUT   GPIO(mode7) 0x27 pulldown, 0x37 pullup, 0x?f no pullup/down */
+ 
+			>;
+		  };
+             };
+       };
+
+       fragment@1 {
+		target = <&ocp>;
+		__overlay__ {
+			test_helper: helper {
+				compatible = "bone-pinmux-helper";
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_test>;
+				status = "okay";
+			};
+		};
+	};
+};

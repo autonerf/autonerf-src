@@ -1,0 +1,1 @@
+optargs=quiet capemgr.disable_partno=BB-BONELT-HDMI,BB-BONELT-HDMIN capemgr.enable_partno=DM-GPIO-Test,am33xx_pwm,bone_pwm_P8_19,bone_pwm_P8_36 drm.debug=7
