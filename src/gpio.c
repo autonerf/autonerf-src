@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "../header/gpio.h"
+#include <gpio.h>
 
 #define GPIOEXPORT   "/sys/class/gpio/export" //GPIO export file
 #define GPIOUNEXPORT "/sys/class/gpio/unexport" //GPIO export file
@@ -39,14 +39,14 @@ uint8_t getInput(uint8_t* io)
     int32_t file = 0;
     char buff[3];
     char adress[100];
-    
+
     //Construct adress line
     strcpy(adress, GPIODIR);
     sprintf(buff, "%i", *io);
     strcat(adress, buff);
     strcat(adress, "/");
     strcat(adress, VALUE);
-    
+
     //Set GPIO direction
     if((file = open(adress, O_RDONLY)) != 0){
         read(file, buff, ( sizeof(buff) / sizeof(char) ));
@@ -69,14 +69,14 @@ void setOutput(uint8_t* io, char state)
     int32_t file = 0;
     char buff[3];
     char adress[100];
-    
+
     //Construct adress line
     strcpy(adress, GPIODIR);
     sprintf(buff, "%i", *io);
     strcat(adress, buff);
     strcat(adress, "/");
     strcat(adress, VALUE);
-    
+
     //Set GPIO direction
     if((file = open(adress, O_WRONLY)) != 0){
         write(file, &state, ( sizeof(state) / sizeof(char) ));
@@ -134,7 +134,7 @@ void setIO(uint8_t* io, char* direction)
     int32_t file = 0;
     char buff[3];
     char adress[100];
-    
+
     //Construct adress line
     strcpy(adress, GPIODIR);
     sprintf(buff, "%i", *io);

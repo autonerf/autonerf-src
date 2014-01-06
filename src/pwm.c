@@ -10,8 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "../header/pwm.h"
-#include "../header/gpio.h"
+#include <pwm.h>
+#include <gpio.h>
 
 #define PWMDIR "/sys/devices/ocp.2/pwm_test_P" //Complete in code
 #define PERIOD "period"
@@ -115,7 +115,7 @@ uint8_t calculatePWM(uint8_t chip, uint8_t pin)
  ******************************************************************************/
 
 /**
- * A 
+ * A
  */
 void setFrequency(uint8_t* io, uint32_t* period)
 {
@@ -135,7 +135,7 @@ void setFrequency(uint8_t* io, uint32_t* period)
     PWMstr pinSpecs;
 
     //Check what header and pin number the IO number has
-    for(i = 0; i < NOCHANNALS; i++){    
+    for(i = 0; i < NOCHANNALS; i++){
         if(*io == pinValP8[i]){
             pinSpecs.header = 8;
             pinSpecs.hpin   = pinPosP8[i];
@@ -183,7 +183,7 @@ void setFrequency(uint8_t* io, uint32_t* period)
 
     }
 
-    //Assign the period to the output    
+    //Assign the period to the output
     writePWMFile(&channal[i], channal[i].period, PERIOD);
 }
 

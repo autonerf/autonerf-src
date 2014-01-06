@@ -5,11 +5,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "../header/gpio.h"
-#include "../header/launcher.h"
+#include <gpio.h>
+#include <launcher.h>
 
 /* Global variables */
-bool present[10] = {false, false, false, false, false, 
+bool present[10] = {false, false, false, false, false,
                     false, false, false, false, false};
 uint8_t chamber[10];
 uint8_t disablePulse;

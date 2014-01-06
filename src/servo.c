@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "../header/gpio.h"
-#include "../header/pwm.h"
-#include "../header/servo.h"
+#include <gpio.h>
+#include <pwm.h>
+#include <servo.h>
 
 #define MINVAL  520000
 #define MAXVAL 1820000

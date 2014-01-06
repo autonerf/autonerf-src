@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "../header/servo.h"
-#include "../header/pantilt.h"
+#include <servo.h>
+#include <pantilt.h>
 
 /* Structures */
 struct servo_t {
@@ -58,7 +58,7 @@ void setDeltaTilt(float angle)
 void setPan(float angle)
 {
     pan.angle = angle;
-    
+
     if(pan.angle > 180.0f){
         pan.angle = 180.0f;
     } else if(pan.angle < 0.0f) {
@@ -74,7 +74,7 @@ void setPan(float angle)
 void setTilt(float angle)
 {
     tilt.angle = angle;
-    
+
     if(tilt.angle > 180.0f){
         tilt.angle = 180.0f;
     } else if(tilt.angle < 0.0f) {
