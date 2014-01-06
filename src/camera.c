@@ -15,21 +15,6 @@
 #include <camera.h>
 #include <logger.h>
 
-inline int xioctl(int fd, int request, void * arguments)
-{
-    int result;
-
-    do {
-        result = v4l2_ioctl(fd, request, arguments);
-    } while (result == -1 && (errno == EINTR || errno == EAGAIN));
-
-    if (result == -1) {
-        LOG_ERROR(strerror(errno));
-    }
-
-    return result;
-}
-
 int
 camera_init(struct camera_t ** camera)
 {
@@ -105,7 +90,9 @@ camera_open(struct camera_t * camera, const char * device)
     format.fmt.pix.pixelformat  = V4L2_PIX_FMT_RGB24;
     format.fmt.pix.field        = V4L2_FIELD_INTERLACED;
 
-    if (xioctl(camera->fd, VIDIOC_S_FMT, &format) != 0) {
+    if (ioctl(camera->fd, VIDIOC_S_FMT, &format) != 0) {
+        LOG_ERROR(strerror(errno));
+
         return -1;
     }
 
@@ -122,7 +109,9 @@ camera_open(struct camera_t * camera, const char * device)
     request.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     request.memory = V4L2_MEMORY_MMAP;
 
-    if (xioctl(camera->fd, VIDIOC_REQBUFS, &request) < 0) {
+    if (ioctl(camera->fd, VIDIOC_REQBUFS, &request) < 0) {
+        LOG_ERROR(strerror(errno));
+
         return -1;
     }
 
@@ -135,7 +124,9 @@ camera_open(struct camera_t * camera, const char * device)
         buffer.memory   = V4L2_MEMORY_MMAP;
         buffer.index    = camera->buffer_count;
 
-        if (xioctl(camera->fd, VIDIOC_QUERYBUF, &buffer) < 0) {
+        if (ioctl(camera->fd, VIDIOC_QUERYBUF, &buffer) < 0) {
+            LOG_ERROR(strerror(errno));
+
             return -1;
         }
 
@@ -162,7 +153,9 @@ camera_open(struct camera_t * camera, const char * device)
         buffer.memory   = V4L2_MEMORY_MMAP;
         buffer.index    = i;
 
-        if (xioctl(camera->fd, VIDIOC_QBUF, &buffer)) {
+        if (ioctl(camera->fd, VIDIOC_QBUF, &buffer) < 0) {
+            LOG_ERROR(strerror(errno));
+
             return -1;
         }
     }
@@ -217,7 +210,11 @@ camera_frame_grab(struct camera_t * camera, struct frame_t * frame)
     frame->buffer.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     frame->buffer.memory = V4L2_MEMORY_MMAP;
 
-    xioctl(camera->fd, VIDIOC_DQBUF, &frame->buffer);
+    if (ioctl(camera->fd, VIDIOC_DQBUF, &frame->buffer) < 0) {
+        LOG_ERROR(strerror(errno));
+
+        return -1;
+    }
 
     frame->size   = frame->buffer.bytesused;
     frame->pixels = (struct pixel_t *) camera->buffers[frame->buffer.index].data;
@@ -240,7 +237,9 @@ camera_frame_release(struct camera_t * camera, struct frame_t * frame)
         frame->filtered = NULL;
     }
 
-    if (xioctl(camera->fd, VIDIOC_QBUF, &frame->buffer) < 0) {
+    if (ioctl(camera->fd, VIDIOC_QBUF, &frame->buffer) < 0) {
+        LOG_ERROR(strerror(errno));
+
         return -1;
     }
 
@@ -252,7 +251,7 @@ camera_start(struct camera_t * camera)
 {
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    return xioctl(camera->fd, VIDIOC_STREAMON, &type);
+    return ioctl(camera->fd, VIDIOC_STREAMON, &type);
 }
 
 int
@@ -260,5 +259,5 @@ camera_stop(struct camera_t * camera)
 {
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    return xioctl(camera->fd, VIDIOC_STREAMOFF, &type);
+    return ioctl(camera->fd, VIDIOC_STREAMOFF, &type);
 }
