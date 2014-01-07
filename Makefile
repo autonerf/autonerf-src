@@ -15,14 +15,7 @@ DTC_FLAGS	= -b 0
 
 all: $(EXECUTABLE) $(BUILD)/DM-GPIO-Test-00A0.dtbo
 
-$(EXECUTABLE): $(BUILD)/main.o $(BUILD)/camera.o
-	$(CC) $(C_FLAGS) $(LD_FLAGS) $(INC_FLAGS) -o $(EXECUTABLE) $(BUILD)/main.o $(BUILD)/camera.o
-
-$(BUILD)/main.o: main.c $(INCLUDE)/camera.h $(BUILD)/camera.o
-	$(CC) $(C_FLAGS) $(LD_FLAGS) $(INC_FLAGS) -c -o $(BUILD)/main.o main.c
-
-$(BUILD)/camera.o: $(SOURCE)/camera.c $(INCLUDE)/camera.h
-	$(CC) $(C_FLAGS) $(LD_FLAGS) $(INC_FLAGS) -c -o $(BUILD)/camera.o $(SOURCE)/camera.c
+$(EXECUTABLE):
 
 $(BUILD)/DM-GPIO-Test-00A0.dtbo: resources/DM-GPIO-Test.dts
 	$(DTC) -O dtb -o $(BUILD)/DM-GPIO-Test-00A0.dtbo $(DTC_FLAGS) -@ resources/overlay/DM-GPIO-Test.dts
