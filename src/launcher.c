@@ -1,150 +1,114 @@
-/**
- * This file controls the missiles
- */
-
+// Standard C dependencies
 #include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <gpio.h>
-#include <launcher.h>
+#include <unistd.h>
 
-/* Global variables */
-bool present[10] = {false, false, false, false, false,
-                    false, false, false, false, false};
-uint8_t chamber[10];
-uint8_t disablePulse;
-uint8_t feedback;
-uint8_t reloadLED;
-uint8_t reloadSw;
+// Project dependencies
+#include <autonerf/launcher.h>
+#include <autonerf/io/gpio.h>
 
-/* Prototypes */
-bool isPresent(void);
-int8_t shootNext(void);
+uint8_t _loaded[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+uint8_t _chamber[10][3];
+uint8_t _feedback;
+uint8_t _disabled;
+uint8_t _reload_led;
+uint8_t _reload_switch;
 
-void initLauncher(void)
+int
+launcher_shoot_next(void)
 {
-    uint8_t i;
+    uint8_t i = 0;
 
-    chamber[0]   = calculateGPIO(2, 14); //Pull-down enabled
-    chamber[1]   = calculateGPIO(2, 12); //Pull-down enabled
-    chamber[2]   = calculateGPIO(2, 10); //Pull-down enabled
-    chamber[3]   = calculateGPIO(2, 8);  //Pull-down enabled
-    chamber[4]   = calculateGPIO(2, 6);  //Pull-down enabled
-    chamber[5]   = calculateGPIO(2, 7);  //Pull-down enabled
-    chamber[6]   = calculateGPIO(2, 9);  //Pull-down enabled
-    chamber[7]   = calculateGPIO(2, 11); //Pull-down enabled
-    chamber[8]   = calculateGPIO(2, 13); //Pull-down enabled
-    chamber[9]   = calculateGPIO(2, 15); //Pull-down enabled
-    reloadLED    = calculateGPIO(2, 5);  //Floating
-    disablePulse = calculateGPIO(0, 9);  //Pull-up enabled
-    reloadSw     = calculateGPIO(0, 2);  //Pull-up enabled
-    feedback     = calculateGPIO(0, 8);  //Floating
-
-    for(i = 0; i < 10; i++){
-        initGPIO(&chamber[i], OUTPUT_PIN); //Pull-down enabled
-    }
-    initGPIO(&reloadLED, OUTPUT_PIN);       //Floating
-    initGPIO(&disablePulse, OUTPUT_PIN);    //Pull-up enabled
-    initGPIO(&reloadSw, INPUT_PIN);         //Pull-up enabled
-    initGPIO(&feedback, INPUT_PIN);         //Floating
-
-    for(i = 0; i < 10; i++){
-        setOutput(&chamber[i], '0');
-    }
-    setOutput(&reloadLED, '0');
-    setOutput(&disablePulse, '1');
-}
-
-/**
- * Launches a missile if present
- */
-int8_t shoot(void)
-{
-    int8_t chamerShot = -1;
-
-    if(isPresent()){
-        chamerShot = shootNext();
+    for (; i < 10; i++) {
+        _loaded[i] ? break : continue;
     }
 
-    return chamerShot;
-}
-
-
-/**
- * Enables the system so it can shoot again.
- */
-void reload(void)
-{
-    uint8_t i;
-
-    if(getInput(&reloadSw) == 0){
-        setOutput(&reloadLED, '0');
-
-        for(i = 0; i < 10; i++){
-            present[i] = true;
-        }
-    }
-}
-
-/**
- * Unexports all GPIO pins before quiting the program.
- */
-void quitLauncher(void)
-{
-    uint8_t i;
-
-    for(i = 0; i < 10; i++){
-        unexportGPIO(&chamber[i]);
-    }
-}
-
-/*******************************************************************************
- ******************************* LOCAL FUNCTIONS *******************************
- ******************************************************************************/
-
-/**
- * Checks whether a missile is present.
- * @return true if there is a missile present
- */
-bool isPresent(void)
-{
-    uint8_t i;
-
-    for(i = 0; i < 10; i++){
-        if(present[i]){
-            return true;
-        }
+    if (i == 10) {
+        return -1;
     }
 
-    return false;
-}
+    _loaded[i] = 0;
 
-int8_t shootNext(void)
-{
-    uint8_t i;
+    gpio_write(_chamber[i], 1);
+    usleep(10000);
+    gpio_write(_chamber[i], 0);
 
-    for(i = 0; i < 10; i++){
-        if(present[i]){
-            break;
-        }
-    }
+    if (i == 9) {
+        gpio_write(_reload_led, 1);
 
-    present[i] = false;
-
-    setOutput(&chamber[i], '1');
-    usleep(100000);
-    setOutput(&chamber[i], '0');
-
-    if(i >= 9){
-        setOutput(&reloadLED, '1');
-
-        while(getInput(&feedback) == 1){
-            setOutput(&disablePulse, '0');
+        while (gpio_read(_feedback) == 1) {
+            gpio_write(_disabled, 0);
             usleep(10);
-            setOutput(&disablePulse, '1');
+            gpio_write(_disabled, 1);
             usleep(10);
         }
     }
+}
 
-    return (int8_t)(i);
+void
+launcher_init(void)
+{
+    uint8_t i = 0;
+
+    _chamber[0]     = gpio_calculate(2, 14);    gpio_init(_chamber[0]); gpio_write(_chamber[0], 0);
+    _chamber[1]     = gpio_calculate(2, 12);    gpio_init(_chamber[1]); gpio_write(_chamber[1], 0);
+    _chamber[2]     = gpio_calculate(2, 10);    gpio_init(_chamber[2]); gpio_write(_chamber[2], 0);
+    _chamber[3]     = gpio_calculate(2, 8);     gpio_init(_chamber[3]); gpio_write(_chamber[3], 0);
+    _chamber[4]     = gpio_calculate(2, 6);     gpio_init(_chamber[4]); gpio_write(_chamber[4], 0);
+    _chamber[5]     = gpio_calculate(2, 7);     gpio_init(_chamber[5]); gpio_write(_chamber[5], 0);
+    _chamber[6]     = gpio_calculate(2, 9);     gpio_init(_chamber[6]); gpio_write(_chamber[6], 0);
+    _chamber[7]     = gpio_calculate(2, 11);    gpio_init(_chamber[7]); gpio_write(_chamber[7], 0);
+    _chamber[8]     = gpio_calculate(2, 13);    gpio_init(_chamber[8]); gpio_write(_chamber[8], 0);
+    _chamber[9]     = gpio_calculate(2, 15);    gpio_init(_chamber[9]); gpio_write(_chamber[9], 0);
+
+    _disabled       = gpio_calculate(0, 9);     gpio_init(_disabled);
+    _feedback       = gpio_calculate(0, 8);     gpio_init(_feedback);
+    _reload_led     = gpio_calculate(2, 5);     gpio_init(_reload_led);
+    _reload_switch  = gpio_calculate(0, 2);     gpio_init(_reload_switch);
+
+    gpio_write(_disabled, 1);
+    gpio_write(_reload_led, 0);
+}
+
+void
+launcher_shoot(void)
+{
+    return (launcher_is_loaded()) ? launcher_shoot_next() : -1;
+}
+
+void
+launcher_reload(void)
+{
+    uint8_t i = 0;
+
+    if (gpio_read(_reload_switch) == 0) {
+        gpio_write(_reload_led, 0);
+
+        for (; i < 10; i++) {
+            _loaded[i] = 1;
+        }
+    }
+}
+
+void
+launcher_deinit(void)
+{
+    uint8_t i = 0;
+
+    for (; i < 10; i++) {
+        gpio_unexport(_chamber[i]);
+    }
+}
+
+int
+launcher_is_loaded(void)
+{
+    uint8_t i = 0;
+
+    for (; i < 10; i++) {
+        if (_loaded[i]) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
