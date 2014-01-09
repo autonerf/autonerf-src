@@ -1,89 +1,65 @@
-/**
- * This file sets and controls GPIO pins
- */
-
+// Standard C dependencies
 #include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <gpio.h>
 
-#define GPIOEXPORT   "/sys/class/gpio/export" //GPIO export file
-#define GPIOUNEXPORT "/sys/class/gpio/unexport" //GPIO export file
-#define GPIODIR      "/sys/class/gpio/gpio"
-#define DIRECTION    "direction" //Direction file
-#define VALUE        "value"
+// Project dependencies
+#include <autonerf/logger.h>
+#include <autonerf/io/gpio.h>
 
-/* Local prototypes */
-void exportGPIO(uint8_t* io);
-void setIO(uint8_t* io, char* direction);
+/**
+ * Sets the GPIO as an output or intput.
+ * @param io        = the GPIO to set
+ * @param direction = set io as input or output
+ */
+void
+gpio_set_direction(const register uint8_t io, const char * direction)
+{
+    FILE *  file;
+    char    filename[128];
+
+    sprintf(filename, "%s%d/%s", GPIO_DIRECTORY, io, GPIO_FILE_DIRECTION);
+
+    if ((file = fopen(filename, "w")) != NULL) {
+        fprintf(file, "%s", direction);
+        fclose(file);
+    } else {
+        LOG_ERROR(
+            "Could not open GPIO direction file. GPIO[%d]%d not set.",
+            (io / GPIO_PIN_COUNT),
+            (io % GPIO_PIN_COUNT)
+        );
+    }
+}
 
 /**
  * Initializes a GPIO pin.
  * @param io        = the IO number that has to be assigned
  * @param direction = the direction of the IO
  */
-void initGPIO(uint8_t* io, char* direction)
+void
+gpio_init(const register uint8_t io, const register uint8_t direction)
 {
-    exportGPIO(io);
-    setIO(io, direction);
+    gpio_export(io);
+    gpio_set_direction(io, (direction == 1) ? GPIO_PIN_INPUT : GPIO_PIN_OUTPUT);
 }
 
 /**
- * Read a input pin.
- * @param io = the input variable
+ * Sets a I/O to GPIO mode.
+ * @param io = the GPIO to set to GPIO mode
  */
-uint8_t getInput(uint8_t* io)
+void
+gpio_export(const register uint8_t io)
 {
-    int32_t file = 0;
-    char buff[3];
-    char adress[100];
+    FILE * file = fopen(GPIO_FILE_EXPORT);
 
-    //Construct adress line
-    strcpy(adress, GPIODIR);
-    sprintf(buff, "%i", *io);
-    strcat(adress, buff);
-    strcat(adress, "/");
-    strcat(adress, VALUE);
-
-    //Set GPIO direction
-    if((file = open(adress, O_RDONLY)) != 0){
-        read(file, buff, ( sizeof(buff) / sizeof(char) ));
-        close(file);
+    if (file) {
+        fprintf(file, "%d", io);
+        fclose(file);
     } else {
-        printf("Faild to open GPIO value file. GPIO[%i]%i not set.\n\n", (*io / PINPCHIP), (*io % PINPCHIP));
-        fflush(stdout);
-    }
-
-    return (buff[0] - 48);
-}
-
-/**
- * Set a output to a sertan value.
- * @param io    = the GPIO to set
- * @param state = the new value of the output
- */
-void setOutput(uint8_t* io, char state)
-{
-    int32_t file = 0;
-    char buff[3];
-    char adress[100];
-
-    //Construct adress line
-    strcpy(adress, GPIODIR);
-    sprintf(buff, "%i", *io);
-    strcat(adress, buff);
-    strcat(adress, "/");
-    strcat(adress, VALUE);
-
-    //Set GPIO direction
-    if((file = open(adress, O_WRONLY)) != 0){
-        write(file, &state, ( sizeof(state) / sizeof(char) ));
-        close(file);
-    } else {
-        printf("Faild to open GPIO value file. GPIO[%i]%i not set.\n\n", (*io / PINPCHIP), (*io % PINPCHIP));
-        fflush(stdout);
+        LOG_ERROR(
+            "Failed to open GPIO export file: GPIO[%d]%d not set",
+            (io / GPIO_PIN_COUNT),
+            (io % GPIO_PIN_COUNT)
+        );
     }
 }
 
@@ -91,22 +67,64 @@ void setOutput(uint8_t* io, char state)
  * Un-sets a I/O to GPIO mode.
  * @param io = the GPIO to un-set from GPIO mode
  */
-void unexportGPIO(uint8_t* io)
+void
+gpio_unexport(const register uint8_t io)
 {
-    int32_t file, length = 0;
-    char buffer[4];
+    FILE * file = fopen(GPIO_FILE_UNEXPORT);
 
-    length = sprintf(buffer, "%i", *io);
-
-    //Unexport GPIO
-    if((file = open(GPIOUNEXPORT, O_WRONLY)) != 0){
-        write(file, buffer, length);
-        close(file);
+    if (file) {
+        fprintf(file, "%d", io);
+        fclose(file);
     } else {
-        printf("Faild to open GPIO unexport file. GPIO[%i]%i not set.\n\n", (*io / PINPCHIP), (*io % PINPCHIP));
-        fflush(stdout);
+        LOG_ERROR(
+            "Failed to open GPIO unexport file: GPIO[%d]%d not set",
+            (io / GPIO_PIN_COUNT),
+            (io % GPIO_PIN_COUNT)
+        );
     }
 }
+
+void
+gpio_write(const register uint8_t io, const register uint8_t value)
+{
+    FILE *  file;
+    char    filename[128];
+
+    sprintf(filename, "%s%d/%s", GPIO_DIRECTORY, io, GPIO_FILE_VALUE);
+
+    if ((file = fopen(filename, "w")) != NULL) {
+        fprintf(file, "%d", value);
+        fclose(file);
+    } else {
+        LOG_ERROR(
+            "Failed to open GPIO value file: GPIO[%d]%d not set",
+            (io / GPIO_PIN_COUNT),
+            (io % GPIO_PIN_COUNT)
+        );
+    }
+}
+
+uint8_t
+gpio_read(const register uint8_t io)
+{
+    FILE *  file;
+    uint8_t result;
+    char    filename[128];
+
+    sprintf(filename, "%s%d/%s", GPIO_DIRECTORY, io, GPIO_FILE_VALUE);
+
+    if ((file = fopen(filename, "r")) != NULL) {
+        fscanf(file, "%d", &result);
+        fclose(file);
+    } else {
+        LOG_ERROR(
+            "Failed to open GPIO value file: GPIO[%d]%d not set",
+            (io / GPIO_PIN_COUNT),
+            (io % GPIO_PIN_COUNT)
+        );
+    }
+}
+
 
 /**
  * Calculates the required GPIO values.
@@ -115,60 +133,8 @@ void unexportGPIO(uint8_t* io)
  *
  * @return the stucture that defines the GPIO
  */
-uint8_t calculateGPIO(uint8_t chip, uint8_t pin)
+uint8_t
+gpio_calculate(const register uint8_t chip, const register uint8_t pin)
 {
-    return (chip * PINPCHIP) + pin;
-}
-
-/*******************************************************************************
- ******************************* LOCAL FUNCTIONS *******************************
- ******************************************************************************/
-
-/**
- * Sets the GPIO as an output or intput.
- * @param io        = the GPIO to set
- * @param direction = set io as input or output
- */
-void setIO(uint8_t* io, char* direction)
-{
-    int32_t file = 0;
-    char buff[3];
-    char adress[100];
-
-    //Construct adress line
-    strcpy(adress, GPIODIR);
-    sprintf(buff, "%i", *io);
-    strcat(adress, buff);
-    strcat(adress, "/");
-    strcat(adress, DIRECTION);
-
-    //Set GPIO direction
-    if((file = open(adress, O_WRONLY)) != 0){
-        write(file, direction, ( sizeof(direction) / sizeof(char) ));
-        close(file);
-    } else {;
-        printf("Faild to open GPIO direction file. GPIO[%i]%i not set.\n\n", (*io / PINPCHIP), (*io % PINPCHIP));
-        fflush(stdout);
-    }
-}
-
-/**
- * Sets a I/O to GPIO mode.
- * @param io = the GPIO to set to GPIO mode
- */
-void exportGPIO(uint8_t* io)
-{
-    int32_t file, length = 0;
-    char buffer[4];
-
-    length = sprintf(buffer, "%i", *io);
-
-    //Export GPIO
-    if((file = open(GPIOEXPORT, O_WRONLY)) != 0){
-        write(file, buffer, length);
-        close(file);
-    } else {
-        printf("Faild to open GPIO export file. GPIO[%i]%i not set.\n\n", (*io / PINPCHIP), (*io % PINPCHIP));
-        fflush(stdout);
-    }
+    return ((chip * GPIO_PIN_COUNT) + pin);
 }

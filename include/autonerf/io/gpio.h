@@ -1,30 +1,66 @@
-/******************************************************************************
- * gpio.h                                                                     *
- *                                                                            *
- * Liberary to access the GPIO pins of the beaglebone.                        *
- * How to initialize the GPIO:                                                *
- * 1.) Calculate the GPIO variables. Can be done with initGPIO(chip, pin).    *
- * 2.) Export the GPIO pin with setGPIO(io).                                  *
- * 3.) Set a direction of the pin with setIO(io, direction).                  *
- *                                                                            *
- * Set a output with setOutput(io, value) where value is '1' or '0'.          *
- *                                                                            *
- * Read a output with getInput(io), a 1 or 0 will be returned.                *
- *****************************************************************************/
+#ifndef AUTONERF_IO_GPIO_H
+#define AUTONERF_IO_GPIO_H
 
-#ifndef GPIO
-#define GPIO
+// Standard C dependencies
+#include <stdint.h>
 
-/* Definitions */
-#define PINPCHIP     32 //Pins per chip
-#define INPUT_PIN  "in"
-#define OUTPUT_PIN "low"
+// Defines
+#define GPIO_PIN_COUNT      32
+#define GPIO_PIN_INPUT      "in"
+#define GPIO_PIN_OUTPUT     "out"
+#define GPIO_FILE_EXPORT    "/sys/class/gpio/export"
+#define GPIO_FILE_UNEXPORT  "/sys/class/gpio/unexport"
+#define GPIO_DIRECTORY      "/sys/class/gpio/gpio"
+#define GPIO_FILE_VALUE     "value"
+#define GPIO_FILE_DIRECTION "direction"
 
-/* Prototypes */
-void initGPIO(uint8_t* io, char* direction);
-uint8_t calculateGPIO(uint8_t chip, uint8_t pin);
-void unexportGPIO(uint8_t* io);
-void setOutput(uint8_t* io, char value);
-uint8_t getInput(uint8_t* io);
+/**
+ Initialize a GPIO pin as a certain I/O pint with a certain direction.
 
-#endif
+ @param io        The I/O pin to initialize
+ @param direction The direction of the GPIO pin (either `1` for input or `0` for output)
+ @warning         *Warning:* The `io` parameter must be calculated using the `gpio_calculate` function
+ @see             gpio_calculate
+ */
+extern void gpio_init(const register uint8_t io, const register gpio_direction_t direction);
+
+/**
+ Set an I/O pin to GPIO mode
+
+ @param io The I/O pin to set to GPIO mode
+ */
+extern void gpio_export(const register uint8_t io);
+
+/**
+ Remove an I/O pin from GPIO mode
+
+ @param io The I/O pin to remove from GPIO mode
+ */
+extern void gpio_unexport(const register uint8_t io);
+
+/**
+ Write a value to an GPIO pin
+
+ @param io    The I/O pin to write
+ @param value The value to write
+ */
+extern void gpio_write(const register uint8_t io, const register uint8_t value);
+
+/**
+ Read a value from a GPIO pin
+
+ @param io The I/O pin to read
+ @return   The value of the I/O pin
+ */
+extern uint8_t gpio_read(const register uint8_t io);
+
+/**
+ Calculate the pin number of a pin on a certain I/O chip
+
+ @param chip The chip to use
+ @param pin  The pin on the chip that has to be used
+ @return     The pin number
+ */
+extern uint8_t gpio_calculate(const register uint8_t chip, const register uint8_t pin);
+
+#endif /* AUTONERF_IO_GPIO_H */
