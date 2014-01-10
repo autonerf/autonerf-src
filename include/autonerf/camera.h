@@ -45,76 +45,76 @@ struct camera_t {
 };
 
 /**
- * Initialize a camera structure
- *
- * @param camera The camera structure to initialize
+ Initialize a camera structure
+
+ @param camera The camera structure to initialize
  */
 extern int camera_init(struct camera_t ** camera);
 
 /**
- * Deinitialize a camera structure
- *
- * @param camera The camera structure to deinitialize
+ Deinitialize a camera structure
+
+ @param camera The camera structure to deinitialize
  */
 extern int camera_deinit(struct camera_t ** camera);
 
 /**
- * Set a filter for the camera
- *
- * @param  camera The camera to set a filter for
- * @param  filter The filter to set
+ Set a filter for the camera
+
+ @param  camera The camera to set a filter for
+ @param  filter The filter to set
  */
 extern int camera_set_filter(struct camera_t * camera, camera_filter_t filter);
 
 /**
- * Unset a camera filter
- *
- * @param  camera The camera to unset the filter of
+ Unset a camera filter
+
+ @param  camera The camera to unset the filter of
  */
 extern int camera_unset_filter(struct camera_t * camera);
 
 /**
- * Open a camera
- *
- * @param camera A pointer to the camera structure to use
- * @param device The camera device to open
+ Open a camera
+
+ @param camera A pointer to the camera structure to use
+ @param device The camera device to open
  */
 extern int camera_open(struct camera_t * camera, const char * device);
 
 /**
- * Close a camera
- *
- * @param camera A pointer to the camera structure to use
+ Close a camera
+
+ @param camera A pointer to the camera structure to use
  */
 extern int camera_close(struct camera_t * camera);
 
 /**
- * Grab a camera frame
- *
- * @param  camera The camera to use
- * @param  frame  The frame to grab
+ Grab a camera frame
+
+ @param  camera The camera to use
+ @param  frame  The frame to grab
  */
 extern int camera_frame_grab(struct camera_t * camera, struct frame_t * frame);
 
 /**
- * Start grabbing frames using a camera
- *
- * @param  camera The camera to use
+ Start grabbing frames using a camera
+
+ @param  camera The camera to use
  */
 int camera_start(struct camera_t * camera);
 
 /**
- * Stop grabbing frames using a camera
- *
- * @param  camera The camera to use
+ Stop grabbing frames using a camera
+
+ @param  camera The camera to use
  */
 extern int camera_stop(struct camera_t * camera);
 
 /**
- * Release a camera frame
- *
- * @param  camera The camera to use
- * @param  frame  The frame to release
+ Release a camera frame
+
+ @param  camera The camera to use
+ @param  frame  The frame to release
  */
 int camera_frame_release(struct camera_t * camera, struct frame_t * frame);
 
