@@ -1,21 +1,26 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <gpio.h>
-#include <pwm.h>
-#include <servo.h>
+// Project dependencies
+#include <autonerf/logger.h>
+#include <autonerf/io/pwm.h>
+#include <autonerf/io/gpio.h>
 
-#define MINVAL  520000
-#define MAXVAL 1820000
-#define DELTAT 1300000.0f
-
-/**
- * Assignes a PWM GPIO to a servo.
- * @param io = the io number to assign
- */
-void initServo(uint8_t* io)
+void
+servo_init(const register uint8_t io)
 {
-    initPWM(io, 20000000);
-    setDutyCycle(io, MINVAL);
+    pwm_init(io, 20000000);
+    pwm_set_duty_cycle(io, SERVO_VALUE_MIN);
+}
+
+void
+servo_set_position(const register uint8_t io, const register float position)
+{
+    uint32_t cycle = SERVO_VALUE_MIN + ((uint32_t) (position * (SERVO_DELTA_TIME / 180.0f)));
+
+    if (cycle < SERVO_VALUE_MIN) { cycle = SERVO_VALUE_MIN; }
+    if (cycle > SERVO_VALUE_MAX) { cycle = SERVO_VALUE_MAX; }
+
+    LOG_INFO("Duty cycle for %f degrees: %d\n", position, cycle);
+
+    pwm_set_duty_cycle(io, cycle);
 }
 
 /**
