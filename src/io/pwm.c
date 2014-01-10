@@ -89,10 +89,6 @@ pwm_init(const register uint8_t io, const register uint32_t period)
     pwm_set_duty_cycle(io, 0);
 }
 
-/**
- * Writes a value to a PWM pin.
- * Interface to uint8_t instead of PWMstr*!
- */
 void
 pwm_set_duty_cycle(const register uint8_t io, const register uint32_t cycle)
 {
