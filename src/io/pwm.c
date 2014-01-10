@@ -16,11 +16,11 @@ struct pwm_t _channels[PWM_CHANNEL_COUNT] = {
 };
 
 /**
- * Writes the assigned value to the assignd filename in the PWMDIR defined by pinInfo.
- *
- * @param pinInfo  = the info required to construct the right file path
- * @param value    = the value to write to the file
- * @param fileName = the filename to write the int value to
+ Write the assigned value to the assigned filename in the PWM_DIRECTORY defined by `info`
+
+ @param info  The info required to construct the correct file path
+ @param value The value to write the the configuration value
+ @param file  The filename to write the integer value to
  */
 void
 pwm_write_file(struct pwm_t * info, const register uint32_t value, const char * file)
@@ -42,10 +42,10 @@ pwm_write_file(struct pwm_t * info, const register uint32_t value, const char * 
 }
 
 /**
- * Checks whether he assigned pin is a PWM pin.
- * @param io = the io to be assigned as PWM pin
- *
- * @return 1 if this pin can be assigned as PWM pin
+ Check if the assigned I/O pin is a PWM pin.
+
+ @param io The I/O to be checked
+ @return Returns 1 if this pin can be used as PWM pin
  */
 uint8_t
 pwm_check_pin(const register uint8_t io)
@@ -63,10 +63,10 @@ pwm_check_pin(const register uint8_t io)
 }
 
 /**
- * Simple tool to convert the frequency the required period time.
- * @param frequency = frequency in Hz
- *
- * @return the period time in nano seconds
+ Convert a frequency to a period
+
+ @param frequency The frequency in [Hz]
+ @return The period in nanoseconds
  */
 uint32_t
 pwm_freq_to_period(const register uint32_t frequency)
@@ -74,13 +74,6 @@ pwm_freq_to_period(const register uint32_t frequency)
     return (1000000000 / frequency);
 }
 
-/**
- * Initializes the PWM period cycle on the pin.
- *
- * @param chip   = the chip the pin is on
- * @param pin    = the pin of the chip
- * @param period = the period of the PWM signal in nano seconds
- */
 void
 pwm_init(const register uint8_t io, const register uint32_t period)
 {
@@ -125,82 +118,67 @@ pwm_set_duty_cycle(const register uint8_t io, const register uint32_t cycle)
 void
 pwm_set_frequency(const register uint8_t io, const register uint32_t period)
 {
-    LOG_EMERGENCY("Function not implemented yet: %s", __PRETTY_FUNCTION__);
-}
+    uint8_t pin_identifier[2][PWM_CHANNEL_COUNT] = {
+        {23, 22, 81, 80, 70, 71},
+        {50, 51, 3, 2, 111, 110}
+    };
 
-/*******************************************************************************
- ******************************* LOCAL FUNCTIONS *******************************
- ******************************************************************************/
+    uint8_t pin_position[2][PWM_CHANNEL_COUNT] = {
+        {12, 19, 34, 36, 45, 46},
+        {14, 16, 21, 22, 29, 31}
+    };
 
-/**
- * A
- */
-void setFrequency(uint8_t* io, uint32_t* period)
-{
-    uint8_t pinValP8[NOCHANNALS] = { 23,  22,  81,  80,  70,  71};
-    uint8_t pinPosP8[NOCHANNALS] = { 12,  19,  34,  36,  45,  46};
-    uint8_t pinPwmP8[NOCHANNALS] = {  6,   5,   4,   3,   5,   6};
-    uint8_t pinSufP8[NOCHANNALS] = {  0,  10,   0,  11,   0,   0}; //Check system after system set
+    uint8_t pin_generator[2][PWM_CHANNEL_COUNT] = {
+        {6, 5, 4, 3, 5, 6},
+        {3, 4, 2, 1, 2, 1}
+    };
 
-    uint8_t pinValP9[NOCHANNALS] = { 50,  51,   3,   2, 111, 110};
-    uint8_t pinPosP9[NOCHANNALS] = { 14,  16,  21,  22,  29,  31};
-    uint8_t pinPwmP9[NOCHANNALS] = {  3,   4,   2,   1,   2,   1};
-    uint8_t pinSufP9[NOCHANNALS] = {  0,   0,   0,   0,   0,   0}; //Check system after system set
+    uint8_t pin_suffix[2][PWM_CHANNEL_COUNT] = {
+        {0, 10, 0, 11, 0, 0},
+        {0, 0, 0, 0, 0, 0}
+    };
 
-    char buff[3];
-    char buffer[100];
-    uint8_t i;
-    PWMstr pinSpecs;
+    uint8_t      i;
+    struct pwm_t info;
 
-    //Check what header and pin number the IO number has
-    for(i = 0; i < NOCHANNALS; i++){
-        if(*io == pinValP8[i]){
-            pinSpecs.header = 8;
-            pinSpecs.hpin   = pinPosP8[i];
-            pinSpecs.pwmPin = pinPwmP8[i];
-            pinSpecs.suffix = pinSufP8[i];
-            break;
-        } else if(*io == pinValP9[i]){
-            pinSpecs.header = 9;
-            pinSpecs.hpin   = pinPosP9[i];
-            pinSpecs.pwmPin = pinPosP9[i];
-            pinSpecs.suffix = pinSufP9[i];
-            break;
+    for (i = 0; i < PWM_CHANNEL_COUNT; i++) {
+        register uint8_t header = 2;
+
+        if (io == pin_identifier[0][i]) { header = 0; }
+        if (io == pin_identifier[1][i]) { header = 1; }
+
+        if (header != 2) {
+            info.header  = (header + 8);
+            info.hpin    = pin_identifier[header][i];
+            info.pwm_pin = pin_generator[header][i];
+            info.suffix  = pin_suffix[header][i];
         }
     }
 
-    pinSpecs.io     = *io;
-    pinSpecs.period = *period;
+    info.io     = io;
+    info.period = period;
 
-    //Check whether all PWM spaces are taken
-    //Check whether this pin already is assigned, if so overwrite
-    //If new space, add after other spaces
-    for(i = 0; i < NOCHANNALS; i++){
+    for (i = 0; i < PWM_CHANNEL_COUNT; i++) {
+        if (_channels[i].header != 0) {
+            if (info.pwm_pin == _channels[i].pwm_pin) {
+                _channels[i] = info;
+                LOG_INFO("Changed PWM channel entry %d", i);
 
-        if(channal[i].header != 0){ //Check whether this pin is already assigned
-            if(pinSpecs.pwmPin == channal[i].pwmPin){ //If this pin is allready assigned, re-assign
-                channal[i] = pinSpecs;
-                printf("Changed old entry.\n");
-                fflush(stdout);
                 break;
             }
-
-            //Can't be true!
-            if(i == (NOCHANNALS - 1)){
-                printf("Fatal error: PWM pin %i not assigned, slots are full!\n", pinSpecs.pwmPin);
-                fflush(stdout);
-                return;
-            }
-
         } else {
-            channal[i] = pinSpecs;
-            printf("Add new entry...\n");
-            fflush(stdout);
+            _channels[i] = info;
+            LOG_INFO("Assigned new PWM channel to entry %d", i);
+
             break;
         }
-
     }
 
-    //Assign the period to the output
-    writePWMFile(&channal[i], channal[i].period, PERIOD);
+    if (i == PWM_CHANNEL_COUNT) {
+        LOG_EMERGENCY("Couldn't assign PWM I/O pin %d, all slots are full", io);
+
+        return;
+    }
+
+    pwm_write_file(&_channels[i], _channels[i].period, PWM_FILE_PERIOD);
 }

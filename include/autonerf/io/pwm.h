@@ -19,13 +19,28 @@ struct {
     uint32_t    period;
 } pwm_t;
 
-extern void pwm_init(const register uint8_t io, const register uint32_t period);
-extern void pwm_set_frequency(const register uint8_t io, const register uint32_t cycle);
-extern void pwm_set_duty_cycle(const register uint8_t io, const register uint32_t cycle);
+/**
+ Initialize the PWM period `period` on the pin `io`
 
-void initPWM(uint8_t* io, uint32_t period);
-void setDutyCycle(uint8_t* io, uint32_t newValue);
-uint32_t freqToPeriod(uint32_t frequency);
-uint8_t calculatePWM(uint8_t chip, uint8_t pin);
+ @param io     The I/O pin to use
+ @param period The period of the PWM signal in nanoseconds
+ */
+extern void pwm_init(const register uint8_t io, const register uint32_t period);
+
+/**
+ Set the frequency of a PWM I/O pin
+
+ @param io   The I/O pin to use
+ @param freq The frequency to use
+ */
+extern void pwm_set_frequency(const register uint8_t io, const register uint32_t freq);
+
+/**
+ Set the duty cycle of a PWM I/O pin
+
+ @param io    The I/O pin to use
+ @param cycle The duty cycle to use
+ */
+extern void pwm_set_duty_cycle(const register uint8_t io, const register uint32_t cycle);
 
 #endif /* AUTONERF_IO_PWM_H */
