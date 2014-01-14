@@ -6,9 +6,9 @@ filter_redness(const struct frame_t * __restrict frame, uint8_t * dest)
 {
     size_t i = FRAME_SIZE;
 
-    for (; i > 0; i--) {
-        int value     = frame->pixels[i].red - (frame->pixels[i].green + frame->pixels[i].blue);
-        dest[(i - 1)] = value;
+    for (i = 0; i < FRAME_SIZE; i++) {
+        int value   = frame->pixels[i].red - (frame->pixels[i].green + frame->pixels[i].blue);
+            dest[i] = (value < 0) ? 0 : value;
     }
 }
 
