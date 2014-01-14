@@ -14,51 +14,53 @@
 #define LOG_DEBUG_ON
 
 #ifdef LOG_EMERGENCY_ON
-    #define LOG_EMERGENCY(message)      printf("[EMERGENCY]\t%s\n", message)
+    #define LOG_EMERGENCY(fmt,...)      LOG_MESSAGE("EMERGENCY", "\t", fmt,##__VA_ARGS__)
 #else
-    #define LOG_EMERGENCY(message)
+    #define LOG_EMERGENCY(fmt,...)
 #endif
 
 #ifdef LOG_ALERT_ON
-    #define LOG_ALERT(message)          printf("[ALERT]\t\t%s\n", message)
+    #define LOG_ALERT(fmt,...)          LOG_MESSAGE("ALERT", "\t\t", fmt,##__VA_ARGS__)
 #else
     #define LOG_ALERT
 #endif
 
 #ifdef LOG_CRITICAL_ON
-    #define LOG_CRITICAL(message)       printf("[CRITICAL]\t%s\n", message)
+    #define LOG_CRITICAL(fmt,...)       LOG_MESSAGE("CRITICAL", "\t", fmt,##__VA_ARGS__)
 #else
-    #define LOG_CRITICAL(message)
+    #define LOG_CRITICAL(fmt,...)
 #endif
 
 #ifdef LOG_ERROR_ON
-    #define LOG_ERROR(message)          printf("[ERROR]\t\t%s\n", message)
+    #define LOG_ERROR(fmt,...)          LOG_MESSAGE("ERROR", "\t\t", fmt,##__VA_ARGS__)
 #else
-    #define LOG_ERROR(message)
+    #define LOG_ERROR(fmt,...)
 #endif
 
 #ifdef LOG_WARNING_ON
-    #define LOG_WARNING(message)        printf("[WARNING]\t%s\n", message)
+    #define LOG_WARNING(fmt,...)        LOG_MESSAGE("WARNING", "\t", fmt,##__VA_ARGS__)
 #else
-    #define LOG_WARNING(message)
+    #define LOG_WARNING(fmt,...)
 #endif
 
 #ifdef LOG_NOTICE_ON
-    #define LOG_NOTICE(message)         printf("[NOTICE]\t%s\n", message)
+    #define LOG_NOTICE(fmt,...)         LOG_MESSAGE("NOTICE", "\t", fmt,##__VA_ARGS__)
 #else
-    #define LOG_NOTICE(message)
+    #define LOG_NOTICE(fmt,...)
 #endif
 
 #ifdef LOG_INFO_ON
-    #define LOG_INFO(message)           printf("[INFO]\t\t%s\n", message)
+    #define LOG_INFO(fmt,...)           LOG_MESSAGE("INFO", "\t\t", fmt,##__VA_ARGS__)
 #else
-    #define LOG_INFO(message)
+    #define LOG_INFO(fmt,...)
 #endif
 
 #ifdef LOG_DEBUG_ON
-    #define LOG_DEBUG(message)          printf("[DEBUG]\t\t%s\n", message)
+    #define LOG_DEBUG(fmt,...)          LOG_MESSAGE("DEBUG", "\t\t", fmt,##__VA_ARGS__)
 #else
-    #define LOG_DEBUG(message)
+    #define LOG_DEBUG(fmt,...)
 #endif
+
+#define LOG_MESSAGE(level,tabs,format,...) { printf("[%s]%s", level, tabs); printf(format, ##__VA_ARGS__); printf("\n"); }
 
 #endif /* _LOGGER_H_ */

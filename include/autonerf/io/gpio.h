@@ -22,21 +22,21 @@
  @warning         *Warning:* The `io` parameter must be calculated using the `gpio_calculate` function
  @see             gpio_calculate
  */
-extern void gpio_init(const register uint8_t io, const register gpio_direction_t direction);
+extern void gpio_init(register const uint8_t io, register const uint8_t direction);
 
 /**
  Set an I/O pin to GPIO mode
 
  @param io The I/O pin to set to GPIO mode
  */
-extern void gpio_export(const register uint8_t io);
+extern void gpio_export(register const uint8_t io);
 
 /**
  Remove an I/O pin from GPIO mode
 
  @param io The I/O pin to remove from GPIO mode
  */
-extern void gpio_unexport(const register uint8_t io);
+extern void gpio_unexport(register const uint8_t io);
 
 /**
  Write a value to an GPIO pin
@@ -44,7 +44,7 @@ extern void gpio_unexport(const register uint8_t io);
  @param io    The I/O pin to write
  @param value The value to write
  */
-extern void gpio_write(const register uint8_t io, const register uint8_t value);
+extern void gpio_write(register const uint8_t io, register const uint8_t value);
 
 /**
  Read a value from a GPIO pin
@@ -52,7 +52,7 @@ extern void gpio_write(const register uint8_t io, const register uint8_t value);
  @param io The I/O pin to read
  @return   The value of the I/O pin
  */
-extern uint8_t gpio_read(const register uint8_t io);
+extern uint8_t gpio_read(register const uint8_t io);
 
 /**
  Calculate the pin number of a pin on a certain I/O chip
@@ -61,6 +61,6 @@ extern uint8_t gpio_read(const register uint8_t io);
  @param pin  The pin on the chip that has to be used
  @return     The pin number
  */
-extern uint8_t gpio_calculate(const register uint8_t chip, const register uint8_t pin);
+extern uint8_t gpio_calculate(register const uint8_t chip, register const uint8_t pin);
 
 #endif /* AUTONERF_IO_GPIO_H */

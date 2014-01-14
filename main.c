@@ -21,7 +21,7 @@ main(void)
     camera_init(&camera);
 
     if (camera_open(camera, "/dev/video0")) {
-        LOG_CRITICAL("Could not open camera");
+        LOG_CRITICAL("Could not open camera: %s", "/dev/video0");
         camera_deinit(&camera);
 
         return -1;

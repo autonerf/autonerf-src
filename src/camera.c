@@ -12,8 +12,8 @@
 #include <sys/select.h>
 
 // Project dependencies
-#include <camera.h>
-#include <logger.h>
+#include <autonerf/camera.h>
+#include <autonerf/logger.h>
 
 int
 camera_init(struct camera_t ** camera)

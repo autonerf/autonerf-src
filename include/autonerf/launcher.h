@@ -1,6 +1,9 @@
 #ifndef AUTONERF_LAUNCHER_H
 #define AUTONERF_LAUNCHER_H
 
+// Standard C dependencies
+#include <stdint.h>
+
 /**
  Initialize the launcher
  */
@@ -9,10 +12,10 @@ extern void launcher_init(void);
 /**
  Aim the launcher to a specific X/Y offset
 
- @param x The offset of the X-axis
- @param y The offset of the Y-axis
+ @param x The location to aim on the X-axis
+ @param y The location to aim on the Y-axis
  */
-extern void launcher_aim(const float x, const float y);
+extern void launcher_aim(const uint8_t x, const uint8_t y);
 
 /**
  Shoot a missile (if one is present)

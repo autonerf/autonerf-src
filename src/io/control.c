@@ -5,7 +5,7 @@
 
 struct servo_t {
     uint8_t  io;
-    float    angle;
+    float    position;
 };
 
 struct servo_t pan;

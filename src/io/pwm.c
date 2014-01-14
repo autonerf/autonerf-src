@@ -6,7 +6,7 @@
 #include <autonerf/io/pwm.h>
 #include <autonerf/io/gpio.h>
 
-struct pwm_t _channels[PWM_CHANNEL_COUNT] = {
+pwm_t _channels[PWM_CHANNEL_COUNT] = {
     {0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0},
@@ -23,16 +23,16 @@ struct pwm_t _channels[PWM_CHANNEL_COUNT] = {
  @param file  The filename to write the integer value to
  */
 void
-pwm_write_file(struct pwm_t * info, const register uint32_t value, const char * file)
+pwm_write_file(pwm_t * info, register const uint32_t value, const char * file)
 {
-    FILE *  file;
+    FILE *  fp;
     char    filename[1024];
 
-    sprintf(filename, "%s%d_%d.%d/%s" PWM_DIRECTORY, info->header, info->hpin, info->suffix, filename);
+    sprintf(filename, "%s%d_%d.%d/%s", PWM_DIRECTORY, info->header, info->hpin, info->suffix, file);
 
-    if ((file = fopen(filename, "w")) != NULL) {
-        fprintf(file, "%d", value);
-        fclose(file);
+    if ((fp = fopen(filename, "w")) != NULL) {
+        fprintf(fp, "%d", value);
+        fclose(fp);
     } else {
         LOG_ERROR(
             "Failed to open the PWM file, check path: %s",
@@ -48,7 +48,7 @@ pwm_write_file(struct pwm_t * info, const register uint32_t value, const char * 
  @return Returns 1 if this pin can be used as PWM pin
  */
 uint8_t
-pwm_check_pin(const register uint8_t io)
+pwm_check_pin(register const uint8_t io)
 {
     static uint8_t  pins[] = {2, 3, 23, 22, 50, 51, 70, 71, 80, 81, 110, 111};
     uint8_t         i      = 0;
@@ -69,13 +69,13 @@ pwm_check_pin(const register uint8_t io)
  @return The period in nanoseconds
  */
 uint32_t
-pwm_freq_to_period(const register uint32_t frequency)
+pwm_freq_to_period(register const uint32_t frequency)
 {
     return (1000000000 / frequency);
 }
 
 void
-pwm_init(const register uint8_t io, const register uint32_t period)
+pwm_init(register const uint8_t io, register const uint32_t period)
 {
     if (!pwm_check_pin(io)) {
         LOG_ERROR(
@@ -90,7 +90,7 @@ pwm_init(const register uint8_t io, const register uint32_t period)
 }
 
 void
-pwm_set_duty_cycle(const register uint8_t io, const register uint32_t cycle)
+pwm_set_duty_cycle(register const uint8_t io, register const uint32_t cycle)
 {
     register uint8_t i = 0;
 
@@ -108,11 +108,11 @@ pwm_set_duty_cycle(const register uint8_t io, const register uint32_t cycle)
         );
     }
 
-    pwm_write_file(&_channels[i], value, PWM_FILE_DUTY);
+    pwm_write_file(&_channels[i], cycle, PWM_FILE_DUTY);
 }
 
 void
-pwm_set_frequency(const register uint8_t io, const register uint32_t period)
+pwm_set_frequency(register const uint8_t io, register const uint32_t period)
 {
     uint8_t pin_identifier[2][PWM_CHANNEL_COUNT] = {
         {23, 22, 81, 80, 70, 71},
@@ -134,8 +134,8 @@ pwm_set_frequency(const register uint8_t io, const register uint32_t period)
         {0, 0, 0, 0, 0, 0}
     };
 
-    uint8_t      i;
-    struct pwm_t info;
+    uint8_t i;
+    pwm_t   info;
 
     for (i = 0; i < PWM_CHANNEL_COUNT; i++) {
         register uint8_t header = 2;
@@ -145,7 +145,7 @@ pwm_set_frequency(const register uint8_t io, const register uint32_t period)
 
         if (header != 2) {
             info.header  = (header + 8);
-            info.hpin    = pin_identifier[header][i];
+            info.hpin    = pin_position[header][i];
             info.pwm_pin = pin_generator[header][i];
             info.suffix  = pin_suffix[header][i];
         }

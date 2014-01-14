@@ -11,7 +11,7 @@
  * @param direction = set io as input or output
  */
 void
-gpio_set_direction(const register uint8_t io, const char * direction)
+gpio_set_direction(register const uint8_t io, const char * direction)
 {
     FILE *  file;
     char    filename[128];
@@ -36,7 +36,7 @@ gpio_set_direction(const register uint8_t io, const char * direction)
  * @param direction = the direction of the IO
  */
 void
-gpio_init(const register uint8_t io, const register uint8_t direction)
+gpio_init(register const uint8_t io, register const uint8_t direction)
 {
     gpio_export(io);
     gpio_set_direction(io, (direction == 1) ? GPIO_PIN_INPUT : GPIO_PIN_OUTPUT);
@@ -47,9 +47,9 @@ gpio_init(const register uint8_t io, const register uint8_t direction)
  * @param io = the GPIO to set to GPIO mode
  */
 void
-gpio_export(const register uint8_t io)
+gpio_export(register const uint8_t io)
 {
-    FILE * file = fopen(GPIO_FILE_EXPORT);
+    FILE * file = fopen(GPIO_FILE_EXPORT, "w");
 
     if (file) {
         fprintf(file, "%d", io);
@@ -68,9 +68,9 @@ gpio_export(const register uint8_t io)
  * @param io = the GPIO to un-set from GPIO mode
  */
 void
-gpio_unexport(const register uint8_t io)
+gpio_unexport(register const uint8_t io)
 {
-    FILE * file = fopen(GPIO_FILE_UNEXPORT);
+    FILE * file = fopen(GPIO_FILE_UNEXPORT, "w");
 
     if (file) {
         fprintf(file, "%d", io);
@@ -85,7 +85,7 @@ gpio_unexport(const register uint8_t io)
 }
 
 void
-gpio_write(const register uint8_t io, const register uint8_t value)
+gpio_write(register const uint8_t io, register const uint8_t value)
 {
     FILE *  file;
     char    filename[128];
@@ -105,10 +105,10 @@ gpio_write(const register uint8_t io, const register uint8_t value)
 }
 
 uint8_t
-gpio_read(const register uint8_t io)
+gpio_read(register const uint8_t io)
 {
     FILE *  file;
-    uint8_t result;
+    int     result;
     char    filename[128];
 
     sprintf(filename, "%s%d/%s", GPIO_DIRECTORY, io, GPIO_FILE_VALUE);
@@ -123,6 +123,8 @@ gpio_read(const register uint8_t io)
             (io % GPIO_PIN_COUNT)
         );
     }
+
+    return (uint8_t) result;
 }
 
 
@@ -134,7 +136,7 @@ gpio_read(const register uint8_t io)
  * @return the stucture that defines the GPIO
  */
 uint8_t
-gpio_calculate(const register uint8_t chip, const register uint8_t pin)
+gpio_calculate(register const uint8_t chip, register const uint8_t pin)
 {
     return ((chip * GPIO_PIN_COUNT) + pin);
 }

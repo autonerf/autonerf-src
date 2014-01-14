@@ -2,7 +2,7 @@
 #include <autonerf/filter.h>
 
 void
-filter_redness(struct frame_t * __restrict frame, uint8_t * dest)
+filter_redness(const struct frame_t * __restrict frame, uint8_t * dest)
 {
     size_t i = FRAME_SIZE;
 
@@ -13,7 +13,7 @@ filter_redness(struct frame_t * __restrict frame, uint8_t * dest)
 }
 
 void
-filter_blueness(struct frame_t * __restrict frame, uint8_t * dest)
+filter_blueness(const struct frame_t * __restrict frame, uint8_t * dest)
 {
     size_t i = FRAME_SIZE;
 
@@ -24,7 +24,7 @@ filter_blueness(struct frame_t * __restrict frame, uint8_t * dest)
 }
 
 void
-filter_greeness(struct frame_t * __restrict frame, uint8_t * dest)
+filter_greeness(const struct frame_t * __restrict frame, uint8_t * dest)
 {
     size_t i = FRAME_SIZE;
 
