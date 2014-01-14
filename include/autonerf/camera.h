@@ -10,8 +10,10 @@
 #include <sys/ioctl.h>
 
 // External dependencies
+#ifndef TEST
 #include <libv4l2.h>
 #include <linux/videodev2.h>
+#endif
 
 #define FRAME_WIDTH     640
 #define FRAME_HEIGHT    480
@@ -31,7 +33,9 @@ struct pixel_t {
 struct frame_t {
     size_t              size;
     struct pixel_t *    pixels;
+#ifndef TEST
     struct v4l2_buffer  buffer;
+#endif
     uint8_t *           filtered;
 };
 

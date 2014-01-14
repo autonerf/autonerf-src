@@ -1,14 +1,22 @@
 # Project configuration
-BUILD 		= build
-SOURCE 		= src
-INCLUDE 	= include
-EXECUTABLE	= run
+BUILD 			= build
+SOURCE 			= src
+TEST 			= test
+INCLUDE 		= include
+EXECUTABLE		= run
+TEST_EXECUTABLE = run_test
 
 # Compiler settings
-CC			= gcc
-C_FLAGS		= -Wall -Werror -Wextra
-LD_FLAGS	= -lv4l2 -lrt
-INC_FLAGS	= -I$(INCLUDE)
+CC				= gcc
+C_FLAGS			= -Wall -Werror -Wextra -O2
+LD_FLAGS		= -lv4l2 -lrt
+INC_FLAGS		= -I$(INCLUDE)
+
+# Compiler test settings
+TEST_CC 		= gcc
+TEST_C_FLAGS 	= -Wall -Werror -Wextra -O0 -ggdb -DTEST=
+TEST_LD_FLAGS	=
+TEST_INC_FLAGS	= -I$(INCLUDE)
 
 DTC 		= dtc
 DTC_FLAGS	= -b 0
@@ -26,9 +34,16 @@ $(EXECUTABLE): $(BUILD)/main.o $(BUILD)/camera.o $(BUILD)/launcher.o $(BUILD)/co
 		$(BUILD)/gpio.o \
 		$(BUILD)/pwm.o
 
+test: $(BUILD)/test.main.o $(BUILD)/test.camera.o $(BUILD)/test.filter.o
+	$(CC) $(TEST_C_FLAGS) $(TEST_LD_FLAGS) $(TEST_INC_FLAGS) -o $(TEST_EXECUTABLE) \
+		$(BUILD)/test.main.o \
+		$(BUILD)/test.camera.o \
+		$(BUILD)/test.filter.o
+
 $(BUILD)/main.o: main.c
 	$(CC) $(C_FLAGS) $(LD_FLAGS) $(INC_FLAGS) -c -o $(BUILD)/main.o main.c
 
+# Normal build targets
 $(BUILD)/camera.o: $(SOURCE)/camera.c
 	$(CC) $(C_FLAGS) $(LD_FLAGS) $(INC_FLAGS) -c -o $(BUILD)/camera.o $(SOURCE)/camera.c
 
@@ -53,6 +68,16 @@ $(BUILD)/pwm.o: $(SOURCE)/io/pwm.c
 $(BUILD)/DM-GPIO-Test-00A0.dtbo: resources/DM-GPIO-Test.dts
 	$(DTC) -O dtb -o $(BUILD)/DM-GPIO-Test-00A0.dtbo $(DTC_FLAGS) -@ resources/DM-GPIO-Test.dts
 
+# Test build targets
+$(BUILD)/test.main.o: main.c
+	$(CC) $(TEST_C_FLAGS) $(TEST_INC_FLAGS) -c -o $(BUILD)/test.main.o main.c
+
+$(BUILD)/test.camera.o: $(TEST)/camera.c
+	$(CC) $(TEST_C_FLAGS) $(TEST_INC_FLAGS) -c -o $(BUILD)/test.camera.o $(TEST)/camera.c
+
+$(BUILD)/test.filter.o: $(SOURCE)/filter.c
+	$(CC) $(TEST_C_FLAGS) $(TEST_INC_FLAGS) -c -o $(BUILD)/test.filter.o $(SOURCE)/filter.c
+
 install:
 	cp $(BUILD)/DM-GPIO-Test-00A0.dtbo /lib/firmware
 	cp resources/.profile ~/.profile
@@ -65,3 +90,6 @@ clean:
 	rm -rf $(EXECUTABLE)
 	rm -rf $(BUILD)/*.o
 	rm -rf $(BUILD)/*.dtbo
+	rm -rf $(TEST_EXECUTABLE)
+	rm -rf ./*.png
+	rm -rf ./*.ppm
