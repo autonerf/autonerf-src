@@ -4,19 +4,9 @@
 #include <stdint.h>
 
 // Project dependencies
-#include <camera.h>
-#include <logger.h>
-
-void
-red_filter(const struct frame_t * __restrict frame, uint8_t * dest)
-{
-    size_t i = 0;
-
-    for (; i < FRAME_SIZE; i++) {
-        int16_t value   = frame->pixels[i].red - (frame->pixels[i].blue + frame->pixels[i].green);
-                dest[i] = (value < 0) ? 0 : value;
-    }
-}
+#include <autonerf/camera.h>
+#include <autonerf/logger.h>
+#include <autonerf/filter.h>
 
 int
 main(void)
@@ -37,7 +27,7 @@ main(void)
         return -1;
     }
 
-    camera_set_filter(camera, red_filter);
+    camera_set_filter(camera, filter_redness);
 
     camera_start(camera);
 
