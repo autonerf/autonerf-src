@@ -35,8 +35,7 @@ main(void)
 
     // Write frame to output
     threshold_iso_data(frame.filtered, BRIGHT);
-    label_blobs(frame.filtered, EIGHT);
-    debugger_save_image("grayscale.ppm", frame.filtered, FRAME_SIZE, TYPE_LABELED);
+    debugger_save_image("grayscale.ppm", frame.filtered, FRAME_SIZE, TYPE_THRESHOLDED);
 
     // Close and deinitialize the camera
     camera_close(camera);

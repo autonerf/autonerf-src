@@ -34,7 +34,7 @@ $(EXECUTABLE): $(BUILD)/main.o $(BUILD)/camera.o $(BUILD)/launcher.o $(BUILD)/co
 		$(BUILD)/gpio.o \
 		$(BUILD)/pwm.o
 
-test: $(BUILD)/test.debugger.o $(BUILD)/test.main.o $(BUILD)/test.camera.o $(BUILD)/test.filter.o
+test: $(BUILD)/test.debugger.o $(BUILD)/test.main.o $(BUILD)/test.camera.o $(BUILD)/test.filter.o $(BUILD)/test.vision.o
 	$(CC) $(TEST_C_FLAGS) $(TEST_LD_FLAGS) $(TEST_INC_FLAGS) -o $(TEST_EXECUTABLE) \
 		$(BUILD)/test.debugger.o \
 		$(BUILD)/test.main.o \

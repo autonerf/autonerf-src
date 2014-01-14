@@ -10,6 +10,9 @@ void set_selected_to_value(uint8_t* img, uint8_t selected, uint8_t value);
 void
 vision_process(uint8_t* data, uint16_t* pan, uint16_t* tilt)
 {
+    pan  = 0;
+    tilt = 0;
+
     contrast_stretch_fast(data);
     threshold_iso_data(data, DARK);
     fill_holes(data, FOUR);
@@ -21,7 +24,7 @@ vision_process(uint8_t* data, uint16_t* pan, uint16_t* tilt)
 
 }
 
-void 
+void
 contrast_stretch_fast(uint8_t* img)
 {
     register int32_t i;
@@ -86,7 +89,7 @@ threshold_iso_data(uint8_t* img, enum eBrightness brightness)
 
   /* Determin start point */
   for(i = 0; hist[i] > 0; i++){
-    i = i;
+    continue;
   }
 
   /* Calculate average */
@@ -192,7 +195,7 @@ fill_holes(uint8_t* img, enum eConnected connected)
     set_selected_to_value(img, 2, 0);
 }
 
-void 
+void
 remove_border_blobs(uint8_t* img, enum eConnected connected)
 {
     register int32_t width  = FRAME_WIDTH - 1;
@@ -468,7 +471,7 @@ label_blobs(uint8_t* img, enum eConnected connected)
               w++;
             }
         }
-        
+
         counter++;
     }while(finished == 1 && counter < 10);
 
@@ -503,7 +506,7 @@ label_blobs(uint8_t* img, enum eConnected connected)
 /**
   Adjust to our needs
  *
-void 
+void
 vBlobAnalyse(image_t *img, uint8_t blobcount, struct blobinfo_t *pBlobInfo)
 {
      //blobinfo_t consist of:
@@ -554,7 +557,7 @@ vBlobAnalyse(image_t *img, uint8_t blobcount, struct blobinfo_t *pBlobInfo)
                     pBlobInfo[b].nof_pixels += 1;
                 }
             }
-        } 
+        }
     }
 }*/
 
@@ -562,18 +565,14 @@ vBlobAnalyse(image_t *img, uint8_t blobcount, struct blobinfo_t *pBlobInfo)
  ************************** Localy used functions *****************************
  ******************************************************************************/
 
-void 
+void
 threshold(uint8_t* img, uint8_t low, uint8_t high)
 {
-  register uint8_t* imgPt = img;
+    size_t i = 0;
 
-  for(imgPt = (img + FRAME_SIZE); imgPt >= img; imgPt--){
-    if(*imgPt >= low && *imgPt <= high){
-      *imgPt = 1;
-    } else {
-      *imgPt = 0;
+    for (; i < FRAME_SIZE; i++) {
+        img[i] = (img[i] >= low && img[i] <= high);
     }
-  }
 }
 
 void
