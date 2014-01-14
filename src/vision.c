@@ -10,11 +10,11 @@ void set_selected_to_value(uint8_t* img, uint8_t selected, uint8_t value);
 void
 vision_process(uint8_t* data, uint16_t* pan, uint16_t* tilt)
 {
-    //contrast_stretch_fast(data);
-    //threshold_iso_data(data, data, DARK);
-    //fill_holes(data, data, FOUR);
-    //remove_border_blobs(data, data, EIGHT);
-    //label_blobs(data, data);
+    contrast_stretch_fast(data);
+    threshold_iso_data(data, DARK);
+    fill_holes(data, FOUR);
+    remove_border_blobs(data, EIGHT);
+    label_blobs(data, EIGHT);
     //blob_analyse(data, info);
 
     //Search largest blob
@@ -72,20 +72,20 @@ contrast_stretch_fast(uint8_t* img)
 void
 threshold_iso_data(uint8_t* img, enum eBrightness brightness)
 {
-  uint16_t histogram[256];
+  uint16_t hist[256];
   uint32_t som;
   register uint8_t average = 0;
   register int32_t  i;
 
   /* Set histogram to 0 */
   for(i = 255; i >= 0; i--){
-      histogram[i] = 0;
+      hist[i] = 0;
   }
 
-  histogram(img, &histogram[0], &som);
+  histogram(img, &hist[0], &som);
 
   /* Determin start point */
-  for(i = 0; histogram[i] > 0; i++){
+  for(i = 0; hist[i] > 0; i++){
     i = i;
   }
 
@@ -109,26 +109,26 @@ fill_holes(uint8_t* img, enum eConnected connected)
     register int32_t hf;
     register int32_t i;
     register uint32_t unfinished;
-    uint8_t (*img)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&img[0];
+    uint8_t (*imgArr)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&img[0];
 
     // Mark the border, exept the blobs
     //Horisontal
     for(w = width; w >= 0; w--){
-        if(img[0][w] == 0){
-            img[0][w] = 2;
+        if(imgArr[0][w] == 0){
+            imgArr[0][w] = 2;
         }
-        if(img[height][w] == 0){
-            img[height][w] = 2;
+        if(imgArr[height][w] == 0){
+            imgArr[height][w] = 2;
         }
     }
 
     //Vertical
     for(h = height; h >= 0; h--){
-        if(img[h][0] == 0){
-            img[h][0] = 2;
+        if(imgArr[h][0] == 0){
+            imgArr[h][0] = 2;
         }
-        if(img[h][width] == 0){
-            img[h][width] = 2;
+        if(imgArr[h][width] == 0){
+            imgArr[h][width] = 2;
         }
     }
 
@@ -142,16 +142,16 @@ fill_holes(uint8_t* img, enum eConnected connected)
 
         for(i = FRAME_SIZE; i > 0; i--){
             //Top left -> lower right
-            if(img[hf][wf] == 0){
+            if(imgArr[hf][wf] == 0){
                 if(neighbour_count(img, wf, hf, 2, connected) > 0){
-                    img[hf][wf] = 2;
+                    imgArr[hf][wf] = 2;
                 }
             }
 
             //Lower right -> top left
-            if(img[h][w] == 0){
+            if(imgArr[h][w] == 0){
                 if(neighbour_count(img, w, h, 2, connected) > 0){
-                    img[h][w] = 2;
+                    imgArr[h][w] = 2;
                 }
             }
 
@@ -172,7 +172,7 @@ fill_holes(uint8_t* img, enum eConnected connected)
         h = height;
 
         for(i = FRAME_SIZE; i > 0; i--){
-            if(img[h][w] == 0){
+            if(imgArr[h][w] == 0){
                 if(neighbour_count(img, w, h, 2, connected) > 0){
                     unfinished = 1;
                     break;
@@ -193,7 +193,7 @@ fill_holes(uint8_t* img, enum eConnected connected)
 }
 
 void 
-remove_border_blobs(uint8_t* img, eConnected connected)
+remove_border_blobs(uint8_t* img, enum eConnected connected)
 {
     register int32_t width  = FRAME_WIDTH - 1;
     register int32_t height = FRAME_HEIGHT - 1;
@@ -281,7 +281,7 @@ remove_border_blobs(uint8_t* img, eConnected connected)
 }
 
 uint32_t
-label_blobs(uint8_t* img, eConnected connected)
+label_blobs(uint8_t* img, enum eConnected connected)
 {
     register uint32_t blobCount = 1;
     register int32_t h;
@@ -313,20 +313,20 @@ label_blobs(uint8_t* img, eConnected connected)
     for(i = size; i >= 0; i--){
         //If this pixel has to be labled
         if(imgArr[h][w] == 255){
-            blobDetected = true;
+            blobDetected = 1;
             if(neighbour_count(img, w, h, blobCount, connected) > 0){ //If this blob is labeled
                 imgArr[h][w] = blobCount;
             } else { //This blob might be labeled with a lower number or is a new blob
                 for(j = blobCount; j != 0; j--){ //Check what number the neighbour might be
                     if(neighbour_count(img, w, h, j, connected) > 0){
-                        foundFlag = true;
+                        foundFlag = 1;
                         break;
                     }
                 }
 
                 if(foundFlag){ //If this pixel is part of a labeled blob, set the right number
                     imgArr[h][w] = j;
-                    foundFlag = false;
+                    foundFlag = 0;
                 } else { //Otherwise, label this as a new blob
                     blobCount += 1;
                     imgArr[h][w] = blobCount;
@@ -343,7 +343,7 @@ label_blobs(uint8_t* img, eConnected connected)
         }
     }
 
-    if(blobDetected == false){
+    if(blobDetected == 0){
         return 0;
     }
 
@@ -502,17 +502,15 @@ label_blobs(uint8_t* img, eConnected connected)
 
 /**
   Adjust to our needs
- */
+ *
 void 
 vBlobAnalyse(image_t *img, uint8_t blobcount, struct blobinfo_t *pBlobInfo)
 {
-    /**
-     * blobinfo_t consist of:
-     * Blob height (pixels)
-     * Blob width (pixels)
-     * Blob number of pixels
-     * Blob perimeter (omtrek in pixels, double)
-     */
+     //blobinfo_t consist of:
+     //Blob height (pixels)
+     //Blob width (pixels)
+     //Blob number of pixels
+
     register uint8_t b;
     register uint16_t w;
     register uint16_t h;
@@ -558,7 +556,7 @@ vBlobAnalyse(image_t *img, uint8_t blobcount, struct blobinfo_t *pBlobInfo)
             }
         } 
     }
-}
+}*/
 
 /******************************************************************************
  ************************** Localy used functions *****************************

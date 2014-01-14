@@ -42,25 +42,22 @@ extern void vision_process(uint8_t* data, uint16_t* pan, uint16_t* tilt);
 /**
  Enhances the contrast of a image.
 
- @param src the source data pointer
- @param dst the destination data pointer
+ @param img the image
  */
 extern void contrast_stretch_fast(uint8_t* img);
 
 /**
  Automatic threshold to a grayscale image
 
- @param src the source data
- @param dst the destination data
+ @param img the image
  @param brightness negative/positive image
  */
-extern void threshold_iso_data(uint8_t* img, enum brightness_t brightness);
+extern void threshold_iso_data(uint8_t* img, enum eBrightness brightness);
 
 /**
  Fills all blob holes.
 
- @param src the source data
- @param dst the destination data
+ @param img the image
  @param connected four or eight connected pixels
  */
 extern void fill_holes(uint8_t* img, enum eConnected connected);
@@ -68,19 +65,17 @@ extern void fill_holes(uint8_t* img, enum eConnected connected);
 /**
  Removes the border blobs.
 
- @param src the source data
- @param dst the destination data
+ @param img the image
  @param connected four or eight connected pixels
  */
-extern void remove_border_blobs(uint8_t* img, eConnected connected);
+extern void remove_border_blobs(uint8_t* img, enum eConnected connected);
 
 /**
- 
- */
-extern uint32_t label_blobs(uint8_t* img, eConnected connected);
+ Labels all blobs in a image
 
-/**
+ @param img the image
+ @param connected four or eight connected pixels
  */
-void blob_analyse(uint8_t* img, uint8_t blobcount, struct blobinfo_t *pBlobInfo)
+extern uint32_t label_blobs(uint8_t* img, enum eConnected connected);
 
 #endif /* AUTONERF_VISION_H */
