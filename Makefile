@@ -16,7 +16,7 @@ INC_FLAGS		= -I$(INCLUDE)
 TEST_CC 		= gcc
 TEST_C_FLAGS 	= -Wall -Werror -Wextra -O0 -ggdb -DTEST=
 TEST_LD_FLAGS	=
-TEST_INC_FLAGS	= -I$(INCLUDE)
+TEST_INC_FLAGS	= -I$(INCLUDE) -Itest
 
 DTC 		= dtc
 DTC_FLAGS	= -b 0
@@ -34,11 +34,13 @@ $(EXECUTABLE): $(BUILD)/main.o $(BUILD)/camera.o $(BUILD)/launcher.o $(BUILD)/co
 		$(BUILD)/gpio.o \
 		$(BUILD)/pwm.o
 
-test: $(BUILD)/test.main.o $(BUILD)/test.camera.o $(BUILD)/test.filter.o
+test: $(BUILD)/test.debugger.o $(BUILD)/test.main.o $(BUILD)/test.camera.o $(BUILD)/test.filter.o
 	$(CC) $(TEST_C_FLAGS) $(TEST_LD_FLAGS) $(TEST_INC_FLAGS) -o $(TEST_EXECUTABLE) \
+		$(BUILD)/test.debugger.o \
 		$(BUILD)/test.main.o \
 		$(BUILD)/test.camera.o \
-		$(BUILD)/test.filter.o
+		$(BUILD)/test.filter.o \
+		$(BUILD)/test.vision.o
 
 $(BUILD)/main.o: main.c
 	$(CC) $(C_FLAGS) $(LD_FLAGS) $(INC_FLAGS) -c -o $(BUILD)/main.o main.c
@@ -72,11 +74,17 @@ $(BUILD)/DM-GPIO-Test-00A0.dtbo: resources/DM-GPIO-Test.dts
 $(BUILD)/test.main.o: main.c
 	$(CC) $(TEST_C_FLAGS) $(TEST_INC_FLAGS) -c -o $(BUILD)/test.main.o main.c
 
+$(BUILD)/test.debugger.o: $(TEST)/debugger.c
+	$(CC) $(TEST_C_FLAGS) $(TEST_INC_FLAGS) -c -o $(BUILD)/test.debugger.o $(TEST)/debugger.c
+
 $(BUILD)/test.camera.o: $(TEST)/camera.c
 	$(CC) $(TEST_C_FLAGS) $(TEST_INC_FLAGS) -c -o $(BUILD)/test.camera.o $(TEST)/camera.c
 
 $(BUILD)/test.filter.o: $(SOURCE)/filter.c
 	$(CC) $(TEST_C_FLAGS) $(TEST_INC_FLAGS) -c -o $(BUILD)/test.filter.o $(SOURCE)/filter.c
+
+$(BUILD)/test.vision.o: $(SOURCE)/vision.c
+	$(CC) $(TEST_C_FLAGS) $(TEST_INC_FLAGS) -c -o $(BUILD)/test.vision.o $(SOURCE)/vision.c
 
 install:
 	cp $(BUILD)/DM-GPIO-Test-00A0.dtbo /lib/firmware

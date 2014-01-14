@@ -7,15 +7,16 @@
 #include <autonerf/camera.h>
 #include <autonerf/logger.h>
 #include <autonerf/filter.h>
+#include <autonerf/vision.h>
+
+// Testing dependencies
+#include <debugger.h>
 
 int
 main(void)
 {
     struct frame_t      frame;
     struct camera_t *   camera;
-    // struct timespec     benchmarks[3];
-    // double              delta  = 0.0;
-    FILE *              output = fopen("grayscale.ppm", "w");
 
     // Initialize and open the camera
     camera_init(&camera);
@@ -28,25 +29,14 @@ main(void)
     }
 
     camera_set_filter(camera, filter_redness);
-
     camera_start(camera);
-
-    // Start benchmarking
-    // clock_gettime(CLOCK_REALTIME, &benchmarks[0]);
     camera_frame_grab(camera, &frame);
-    // clock_gettime(CLOCK_REALTIME, &benchmarks[1]);
-
-    fprintf(output, "P5\n640 480 255\n");
-    printf("Written %lu bytes\n", fwrite(frame.filtered, sizeof(uint8_t), FRAME_SIZE, output));
-    printf("Frame size: %lu bytes\n", frame.size);
-    fclose(output);
-
     camera_stop(camera);
 
-    // delta = (benchmarks[1].tv_sec - benchmarks[0].tv_sec);
-    // delta = delta + (((double) (benchmarks[1].tv_nsec - benchmarks[0].tv_nsec)) / 1000000000.0d);
-
-    // printf("Duration: %fs\n", delta);
+    // Write frame to output
+    threshold_iso_data(frame.filtered, BRIGHT);
+    label_blobs(frame.filtered, EIGHT);
+    debugger_save_image("grayscale.ppm", frame.filtered, FRAME_SIZE, TYPE_LABELED);
 
     // Close and deinitialize the camera
     camera_close(camera);
