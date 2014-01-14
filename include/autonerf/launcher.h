@@ -7,6 +7,14 @@
 extern void launcher_init(void);
 
 /**
+ Aim the launcher to a specific X/Y offset
+
+ @param x The offset of the X-axis
+ @param y The offset of the Y-axis
+ */
+extern void launcher_aim(const float x, const float y);
+
+/**
  Shoot a missile (if one is present)
 
  @return Returns 1 if the launcher has fired, 0 otherwise

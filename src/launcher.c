@@ -5,6 +5,7 @@
 // Project dependencies
 #include <autonerf/launcher.h>
 #include <autonerf/io/gpio.h>
+#include <autonerf/io/control.h>
 
 uint8_t _loaded[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 uint8_t _chamber[10][3];
@@ -45,6 +46,13 @@ launcher_shoot_next(void)
 }
 
 void
+launcher_aim(const float x, const float y)
+{
+    control_set_pan_delta(x);
+    control_set_tilt_delta(y);
+}
+
+void
 launcher_init(void)
 {
     uint8_t i = 0;
@@ -67,6 +75,8 @@ launcher_init(void)
 
     gpio_write(_disabled, 1);
     gpio_write(_reload_led, 0);
+
+    control_init();
 }
 
 void
