@@ -49,7 +49,7 @@ debugger_save_thresholded_image(const char * filename, const uint8_t * image, co
 
     fprintf(output, "P5\n%d %d\n255\n", FRAME_WIDTH, FRAME_HEIGHT);
     for (i = 0; i < size; i++) {
-        data[i] = (image[i] != 0) ? 255 : 0;
+        data[i] = (image[i] != 0) ? 0 : 255;
     }
     count = fwrite(data, sizeof(uint8_t), size, output);
     fclose(output);
