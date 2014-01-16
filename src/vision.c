@@ -8,11 +8,13 @@ uint8_t neighbours_equal_or_higher(uint8_t* img, uint16_t x, uint16_t y, uint8_t
 void set_selected_to_value(uint8_t* img, uint8_t selected, uint8_t value);
 
 void
-vision_process(uint8_t* img, float* pan, float* tilt)
+vision_process(uint8_t* img, uint16_t * pan, uint16_t * tilt)
 {
     uint8_t blobs;
     uint32_t blob_pos_x = 0;
     uint32_t blob_pos_y = 0;
+    pan = 0;
+    tilt = 0;
 
     contrast_stretch_fast(img);
     threshold_iso_data(img, DARK);
@@ -508,7 +510,7 @@ label_blobs(uint8_t* img, enum eConnected connected)
   Adjust to our needs
  */
 void
-blob_analyse(image_t *img, uint8_t blobcount, uint32_t* blob_pos_x, uint32_t* blob_pos_y)
+blob_analyse(uint8_t *img, uint8_t blobcount, uint32_t* blob_pos_x, uint32_t* blob_pos_y)
 {
      //blobinfo_t consist of:
      //Blob height (pixels)

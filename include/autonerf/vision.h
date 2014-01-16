@@ -30,7 +30,7 @@ enum eConnected{
  @param pan  horisontal offset in pixels
  @param tilt vertical offset in pixels
  */
-extern void vision_process(uint8_t* img, float* pan, float* tilt);
+extern void vision_process(uint8_t* img, uint16_t * pan, uint16_t * tilt);
 
 /**
  Enhances the contrast of a image.
@@ -79,6 +79,6 @@ extern uint32_t label_blobs(uint8_t* img, enum eConnected connected);
  @param blob_pos_x the x center position of the blob
  @param blob_pos_y the y center position of the blob
  */
-extern void blob_analyse(image_t *img, uint8_t blobcount, uint32_t* blob_pos_x, uint32_t* blob_pos_y)
+extern void blob_analyse(uint8_t *img, uint8_t blobcount, uint32_t* blob_pos_x, uint32_t* blob_pos_y);
 
 #endif /* AUTONERF_VISION_H */
