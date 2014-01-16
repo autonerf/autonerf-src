@@ -14,13 +14,6 @@ enum eConnected{
     FOUR = 4
 };
 
-struct blobinfo_t
-{
-  uint32_t height;
-  uint32_t width;
-  uint32_t nof_pixels;
-}blobinfo_t;
-
 /**
  * List of improvements:
  * - No copy data, src pointer == dst pointer?
@@ -37,7 +30,7 @@ struct blobinfo_t
  @param pan  horisontal offset in pixels
  @param tilt vertical offset in pixels
  */
-extern void vision_process(uint8_t* data, uint16_t* pan, uint16_t* tilt);
+extern void vision_process(uint8_t* img, float* pan, float* tilt);
 
 /**
  Enhances the contrast of a image.
@@ -77,5 +70,15 @@ extern void remove_border_blobs(uint8_t* img, enum eConnected connected);
  @param connected four or eight connected pixels
  */
 extern uint32_t label_blobs(uint8_t* img, enum eConnected connected);
+
+/**
+ Analyses the image and returns the coordinates of the largest blob.
+
+ @param img the image
+ @param blobcount the number of blobs
+ @param blob_pos_x the x center position of the blob
+ @param blob_pos_y the y center position of the blob
+ */
+extern void blob_analyse(image_t *img, uint8_t blobcount, uint32_t* blob_pos_x, uint32_t* blob_pos_y)
 
 #endif /* AUTONERF_VISION_H */
