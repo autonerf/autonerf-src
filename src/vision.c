@@ -8,20 +8,21 @@ uint8_t neighbours_equal_or_higher(uint8_t* img, uint16_t x, uint16_t y, uint8_t
 void set_selected_to_value(uint8_t* img, uint8_t selected, uint8_t value);
 
 void
-vision_process(uint8_t* data, uint16_t* pan, uint16_t* tilt)
+vision_process(uint8_t* img, float* pan, float* tilt)
 {
-    pan  = 0;
-    tilt = 0;
+    uint8_t blobs;
+    uint32_t blob_pos_x = 0;
+    uint32_t blob_pos_y = 0;
 
-    contrast_stretch_fast(data);
-    threshold_iso_data(data, DARK);
-    fill_holes(data, FOUR);
-    remove_border_blobs(data, EIGHT);
-    label_blobs(data, EIGHT);
-    //blob_analyse(data, info);
+    contrast_stretch_fast(img);
+    threshold_iso_data(img, DARK);
+    fill_holes(img, FOUR);
+    remove_border_blobs(img, EIGHT);
+    blobs = label_blobs(img, EIGHT);
 
-    //Search largest blob
-
+    if(blobs > 0){
+        blob_analyse(img, blobs, &blob_pos_x, &blob_pos_y);
+    }
 }
 
 void
@@ -505,61 +506,78 @@ label_blobs(uint8_t* img, enum eConnected connected)
 
 /**
   Adjust to our needs
- *
+ */
 void
-vBlobAnalyse(image_t *img, uint8_t blobcount, struct blobinfo_t *pBlobInfo)
+blob_analyse(image_t *img, uint8_t blobcount, uint32_t* blob_pos_x, uint32_t* blob_pos_y)
 {
      //blobinfo_t consist of:
      //Blob height (pixels)
      //Blob width (pixels)
      //Blob number of pixels
 
-    register uint8_t b;
-    register uint16_t w;
-    register uint16_t h;
-    uint16_t minWidth[255];
-    uint16_t maxWidth[255];
-    uint16_t minHeight[255];
-    uint16_t maxHeight[255];
+    register int32_t i;
+    register uint32_t width = (FRAME_WIDTH - 1);
+    register uint32_t height = (FRAME_HEIGHT - 1);
+    register uint32_t w = width;
+    register uint32_t h = height;
+    uint32_t blob_mass[255];
+    uint32_t largest_blob = 0;
+    uint32_t min_width = width;
+    uint32_t max_width = 0;
+    uint32_t min_height = height;
+    uint32_t max_height = 0;
     uint8_t (*imgArr)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&img[0];
 
-    for(b = 0; b < blobs; b++){
-        minWidth[b]             = FRAME_WIDTH;
-        maxWidth[b]             = 0;
-        minHeight[b]            = FRAME_HEIGHT;
-        maxHeight[b]            = 0;
-        pBlobInfo[b].height     = 0;
-        pBlobInfo[b].width      = 0;
-        pBlobInfo[b].nof_pixels = 0;
+    //Clear blob_mass registers
+    for(i = 255; i >= 0; i--){
+        blob_mass[i] = 0;
+    }
 
-        for(h = 0; h < img->height; h++){
-            for(w = 0; w < img->width; w++){
-                if(imgArr[h][w] == (b + 1)){
-                    //Calculate height
-                    if(h < minHeight[b]){
-                        minHeight[b] = h;
-                    }
-                    if(h > maxHeight[b]){
-                        maxHeight[b] = h;
-                    }
-                    pBlobInfo[b].height = maxHeight[b] - minHeight[b];
-
-                    //Calculate width
-                    if(w < minWidth[b]){
-                        minWidth[b] = w;
-                    }
-                    if(w > maxWidth[b]){
-                        maxWidth[b] = w;
-                    }
-                    pBlobInfo[b].width = maxWidth[b] - minWidth[b];
-
-                    //Count number of pixels
-                    pBlobInfo[b].nof_pixels += 1;
-                }
-            }
+    //Calculate blob mass
+    for(i = (FRAME_SIZE - 1); i >= 0; i--){
+        if(img[i] > 0){
+            blob_mass[img[i]]++;
         }
     }
-}*/
+
+    //Search for largest blob
+    for(i = blobcount; i > 0; i--){
+        if(blob_mass[i] > largest_blob){
+            largest_blob = blob_mass[i];
+        }
+    }
+
+    //Get coordinates
+    for(i = (FRAME_SIZE - 1); i >= 0; i--){
+        if(imgArr[h][w] == largest_blob){
+            //Calculate height
+            if(h < min_height){
+                min_height = h;
+            }
+            if(h > max_height){
+                max_height = h;
+            }
+
+            //Calculate width
+            if(w < min_width){
+                min_width = w;
+            }
+            if(w > max_width){
+                max_width = w;
+            }
+        }
+
+        if(w == width){
+          w = 0;
+          h--;
+        } else {
+          w--;
+        }
+    }
+
+    *blob_pos_y = (max_height - min_height) / 2;
+    *blob_pos_x = (max_width - min_width) / 2;
+}
 
 /******************************************************************************
  ************************** Localy used functions *****************************
