@@ -5,9 +5,9 @@
 #include <stdint.h>
 
 // Defines
-#define SERVO_VALUE_MIN     520000
-#define SERVO_VALUE_MAX     1820000
-#define SERVO_DELTA_TIME    1300000.0f
+#define SERVO_VALUE_MIN     700000//520000
+#define SERVO_VALUE_MAX     2200000//1820000
+#define SERVO_DELTA_TIME    1500000.0f//1300000.0f
 
 /**
  Assign a PWM signal to a servo motor
