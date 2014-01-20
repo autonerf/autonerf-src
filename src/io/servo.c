@@ -5,21 +5,21 @@
 #include <autonerf/io/servo.h>
 
 void
-servo_init(register const uint8_t io)
+servo_init(register const uint8_t io, register const uint32_t servo_min)
 {
     pwm_init(io, 20000000);
-    pwm_set_duty_cycle(io, SERVO_VALUE_MIN);
+    pwm_set_duty_cycle(io, servo_min);
 }
 
 void
-servo_set_position(register const uint8_t io, register const float position)
+servo_set_position(register const uint8_t io, register const float position, register const uint32_t servo_min, register const uint32_t servo_max)
 {
-    uint32_t cycle = SERVO_VALUE_MIN + ((uint32_t) (position * (SERVO_DELTA_TIME / 180.0f)));
+    uint32_t cycle = servo_min + ((uint32_t) (position * (float)(servo_max - servo_min) / 180.0f));
 
-    if (cycle < SERVO_VALUE_MIN) { cycle = SERVO_VALUE_MIN; }
-    if (cycle > SERVO_VALUE_MAX) { cycle = SERVO_VALUE_MAX; }
+    if (cycle < servo_min) { cycle = servo_min; }
+    if (cycle > servo_max) { cycle = servo_max; }
 
-    LOG_INFO("Duty cycle for %f degrees: %d\n", position, cycle);
+    LOG_INFO("Duty cycle for %f degrees: %d", position, cycle);
 
     pwm_set_duty_cycle(io, cycle);
 }

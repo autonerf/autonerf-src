@@ -6,6 +6,8 @@
 struct servo_t {
     uint8_t  io;
     float    position;
+    uint32_t min;
+    uint32_t max;
 };
 
 struct servo_t pan;
@@ -17,11 +19,16 @@ control_init(void)
   pan.io        = gpio_calculate(0, 22);
   tilt.io       = gpio_calculate(2, 16);
 
-  pan.position  = 0.0;
-  tilt.position = 0.0;
+  pan.position  = 90.0;
+  tilt.position = 90.0;
 
-  servo_init(pan.io);
-  servo_init(tilt.io);
+  pan.min  =  700000; //Tested; OK
+  pan.max  = 2200000; //Tested; OK
+  tilt.min =  700000; //nS timestamp
+  tilt.max = 2200000; //nS timestamp
+
+  servo_init(pan.io, pan.min);
+  servo_init(tilt.io, tilt.min);
 }
 
 void
@@ -32,7 +39,7 @@ control_set_pan(float position)
 
     pan.position = position;
 
-    servo_set_position(pan.io, pan.position);
+    servo_set_position(pan.io, pan.position, pan.min, pan.max);
 }
 
 void
@@ -43,7 +50,7 @@ control_set_tilt(float position)
 
     tilt.position = position;
 
-    servo_set_position(tilt.io, tilt.position);
+    servo_set_position(tilt.io, tilt.position, tilt.min, tilt.max);
 }
 
 void
