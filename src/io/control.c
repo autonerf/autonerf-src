@@ -24,8 +24,8 @@ control_init(void)
 
   pan.min  =  700000; //Tested; OK
   pan.max  = 2200000; //Tested; OK
-  tilt.min =  700000; //nS timestamp
-  tilt.max = 2200000; //nS timestamp
+  tilt.min =  555092; //Tested; OK
+  tilt.max = 2033333; //Tested; OK
 
   servo_init(pan.io, pan.min);
   servo_init(tilt.io, tilt.min);
