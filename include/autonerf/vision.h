@@ -53,7 +53,7 @@ extern void threshold_iso_data(uint8_t* img, enum eBrightness brightness);
  @param img the image
  @param connected four or eight connected pixels
  */
-extern void fill_holes(uint8_t* img, enum eConnected connected);
+extern void fill_holes(struct frame_t * frame, enum eConnected connected);
 
 /**
  Removes the border blobs.
@@ -69,7 +69,7 @@ extern void remove_border_blobs(uint8_t* img, enum eConnected connected);
  @param img the image
  @param connected four or eight connected pixels
  */
-extern uint32_t label_blobs(uint8_t* img, enum eConnected connected);
+extern uint32_t label_blobs(struct frame_t * frame, enum eConnected connected);
 
 /**
  Analyses the image and returns the coordinates of the largest blob.

@@ -18,14 +18,13 @@ struct pixel_t {
     uint8_t blue;
     uint8_t green;
     uint8_t red;
-    uint8_t __padding;
 };
 
 struct frame_t {
     size_t              size;
     IplImage *          _frame;
     struct pixel_t *    pixels;
-    uint8_t             grayscale[FRAME_WIDTH][FRAME_HEIGHT];
+    uint8_t             grayscale[FRAME_HEIGHT][FRAME_WIDTH];
 };
 
 typedef void(*camera_filter_t)(const struct frame_t * __restrict, uint8_t * dest);
