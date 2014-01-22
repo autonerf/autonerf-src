@@ -6,30 +6,26 @@
 #include <stdint.h>
 #include <string.h>
 
-// POSIX dependencies
-#include <sys/ioctl.h>
-
-// External dependencies
-#ifndef TEST
-#include <libv4l2.h>
-#include <linux/videodev2.h>
-#endif
+// OpenCV dependencies
+#include <cv.h>
+#include <highgui.h>
 
 #define FRAME_WIDTH     640
 #define FRAME_HEIGHT    480
 #define FRAME_SIZE      (FRAME_WIDTH * FRAME_HEIGHT)
 
 struct pixel_t {
-    uint8_t red;
     uint8_t blue;
     uint8_t green;
+    uint8_t red;
+    uint8_t __padding;
 };
 
 struct frame_t {
     size_t              size;
-    struct pixel_t *    pixels;
-    uint8_t             grayscale[FRAME_HEIGHT][FRAME_WIDTH];
     IplImage *          _frame;
+    struct pixel_t *    pixels;
+    uint8_t             grayscale[FRAME_WIDTH][FRAME_HEIGHT];
 };
 
 typedef void(*camera_filter_t)(const struct frame_t * __restrict, uint8_t * dest);

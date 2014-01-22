@@ -1,9 +1,5 @@
 // Standard C dependencies
-#include <fcntl.h>
 #include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
 
 // OpenCV dependencies
 #include <cv.h>
@@ -18,6 +14,7 @@ camera_init(struct camera_t ** camera)
 {
     (*camera)         = (struct camera_t *) malloc(sizeof(struct camera_t));
     (*camera)->device = NULL;
+    (*camera)->filter = NULL;
 
     return 0;
 }
@@ -66,6 +63,8 @@ camera_open(struct camera_t * camera, const int device)
     }
 
     camera->device = cvCaptureFromCAM(device);
+    cvSetCaptureProperty(camera->device, CV_CAP_PROP_FRAME_WIDTH, FRAME_WIDTH);
+    cvSetCaptureProperty(camera->device, CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT);
 
     return camera->device ? 0 : -1;
 }
@@ -92,6 +91,10 @@ camera_frame_grab(struct camera_t * camera, struct frame_t * frame)
 
     frame->_frame = cvQueryFrame(camera->device);
     frame->pixels = (struct pixel_t *) frame->_frame->imageData;
+
+    if (!frame->_frame || !frame->_frame->imageSize) {
+        return -1;
+    }
 
     if (camera->filter) {
         camera->filter(frame, (uint8_t *) frame->grayscale);

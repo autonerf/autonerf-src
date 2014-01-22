@@ -17,9 +17,10 @@ filter_blueness(const struct frame_t * __restrict frame, uint8_t * dest)
 {
     size_t i = FRAME_SIZE;
 
-    for (; i > 0; i--) {
-        int16_t value   = frame->pixels[(i - 1)].blue - (frame->pixels[(i - 1)].green + frame->pixels[(i - 1)].red);
-                dest[i] = value;
+    for (i = 0; i < FRAME_SIZE; i++) {
+        // int16_t value   = frame->pixels[i].blue - (frame->pixels[i].green + frame->pixels[i].red);
+                // dest[i] = (value < 0) ? 0 : value;
+        dest[i] = frame->pixels[i].blue;
     }
 }
 

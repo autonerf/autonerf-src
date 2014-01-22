@@ -19,13 +19,13 @@ debugger_save_labeled_image(const char * filename, const uint8_t * image, const 
 
     for (i = 0; i < size; i++) {
         if ((image[i]) == 0) {
-            frame.pixels[i] = (struct pixel_t) {0, 0, 0};
+            frame.pixels[i] = (struct pixel_t) {0, 0, 0, 0};
         } else if ((image[i] % 3) == 0) {
-            frame.pixels[i] = (struct pixel_t) {0, 0, 255};
+            frame.pixels[i] = (struct pixel_t) {0, 0, 255, 0};
         } else if ((image[i] % 2) == 0) {
-            frame.pixels[i] = (struct pixel_t) {0, 255, 0};
+            frame.pixels[i] = (struct pixel_t) {0, 255, 0, 0};
         } else {
-            frame.pixels[i] = (struct pixel_t) {255, 0, 0};
+            frame.pixels[i] = (struct pixel_t) {255, 0, 0, 0};
         }
     }
 
