@@ -1,41 +1,34 @@
-// Standard C++ dependencies
-#include <time.h>
-#include <stdio.h>
-#include <stdint.h>
+// OpenCV dependencies
+#include <cv.h>
+#include <highgui.h>
 
 // Project dependencies
 #include <autonerf/camera.h>
-#include <autonerf/logger.h>
 #include <autonerf/filter.h>
-#include <autonerf/vision.h>
-
-// Testing dependencies
-#include <debugger.h>
 
 int
 main(void)
 {
     struct frame_t      frame;
     struct camera_t *   camera;
+    IplImage *          grayscale = cvCreateImage(cvSize(FRAME_HEIGHT, FRAME_WIDTH), IPL_DEPTH_8U, 1);
 
     // Initialize and open the camera
     camera_init(&camera);
+    camera_open(camera, 0);
+    camera_set_filter(camera, filter_blueness);
 
-    if (camera_open(camera, "/dev/video0")) {
-        LOG_CRITICAL("Could not open camera: %s", "/dev/video0");
-        camera_deinit(&camera);
+    // Create windows
+    cvNamedWindow("input", 0);
+    cvNamedWindow("grayscale", 0);
 
-        return -1;
+    while (1) {
+        camera_frame_grab(camera, &frame);
+
+        cvSetData(grayscale, frame.grayscale, FRAME_WIDTH);
+        cvShowImage("input", frame._frame);
+        cvShowImage("grayscale", grayscale);
     }
-
-    camera_set_filter(camera, filter_redness);
-    camera_start(camera);
-    camera_frame_grab(camera, &frame);
-    camera_stop(camera);
-
-    // Write frame to output
-    threshold_iso_data(frame.filtered, BRIGHT);
-    debugger_save_image("grayscale.ppm", frame.filtered, FRAME_SIZE, TYPE_THRESHOLDED);
 
     // Close and deinitialize the camera
     camera_close(camera);

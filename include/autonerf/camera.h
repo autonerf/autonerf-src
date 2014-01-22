@@ -19,11 +19,6 @@
 #define FRAME_HEIGHT    480
 #define FRAME_SIZE      (FRAME_WIDTH * FRAME_HEIGHT)
 
-struct buffer_t {
-    void *  data;
-    size_t  size;
-};
-
 struct pixel_t {
     uint8_t red;
     uint8_t blue;
@@ -33,19 +28,15 @@ struct pixel_t {
 struct frame_t {
     size_t              size;
     struct pixel_t *    pixels;
-#ifndef TEST
-    struct v4l2_buffer  buffer;
-#endif
-    uint8_t *           filtered;
+    uint8_t             grayscale[FRAME_HEIGHT][FRAME_WIDTH];
+    IplImage *          _frame;
 };
 
 typedef void(*camera_filter_t)(const struct frame_t * __restrict, uint8_t * dest);
 
 struct camera_t {
-    int                 fd;
-    camera_filter_t     filter;
-    struct buffer_t *   buffers;
-    size_t              buffer_count;
+    CvCapture *     device;
+    camera_filter_t filter;
 };
 
 /**
@@ -83,7 +74,7 @@ extern int camera_unset_filter(struct camera_t * camera);
  @param camera A pointer to the camera structure to use
  @param device The camera device to open
  */
-extern int camera_open(struct camera_t * camera, const char * device);
+extern int camera_open(struct camera_t * camera, const int device);
 
 /**
  Close a camera
