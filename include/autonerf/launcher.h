@@ -15,7 +15,7 @@ extern void launcher_init(void);
  @param x The location to aim on the X-axis
  @param y The location to aim on the Y-axis
  */
-extern void launcher_aim(const uint8_t x, const uint8_t y);
+extern void launcher_aim(const int16_t x, const int16_t y);
 
 /**
  Shoot a missile (if one is present)

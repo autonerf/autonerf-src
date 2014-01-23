@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <autonerf/vision.h>
 
 //Local prototypes
@@ -8,23 +9,40 @@ uint8_t neighbours_equal_or_higher(struct frame_t * frame, uint16_t x, uint16_t 
 void set_selected_to_value(uint8_t* img, uint8_t selected, uint8_t value);
 
 void
+erode(struct frame_t * frame, uint8_t thres, enum eConnected connected)
+{
+    register uint32_t x = 0;
+    register uint32_t y = 0;
+
+    for (y = 0; y < FRAME_HEIGHT; y++) {
+        for (x = 0; x < FRAME_WIDTH; x++) {
+            if (frame->grayscale[y][x]) {
+                if (neighbour_count(frame, x, y, frame->grayscale[y][x], connected) < thres) {
+                    frame->grayscale[y][x] = 0;
+                }
+            }
+        }
+    }
+}
+
+void
 vision_process(uint8_t* img, uint16_t * pan, uint16_t * tilt)
 {
-    uint8_t blobs;
-    uint32_t blob_pos_x = 0;
-    uint32_t blob_pos_y = 0;
-    pan = 0;
-    tilt = 0;
+    // uint8_t blobs;
+    // uint32_t blob_pos_x = 0;
+    // uint32_t blob_pos_y = 0;
+    // pan = 0;
+    // tilt = 0;
 
-    contrast_stretch_fast(img);
-    threshold_iso_data(img, DARK);
-    // fill_holes(img, FOUR);
-    remove_border_blobs(img, EIGHT);
-    blobs = label_blobs(img, EIGHT);
+    // contrast_stretch_fast(img);
+    // threshold_iso_data(img, DARK);
+    // // fill_holes(img, FOUR);
+    // remove_border_blobs(img, EIGHT);
+    // blobs = label_blobs(img, EIGHT);
 
-    if(blobs > 0){
-        blob_analyse(img, blobs, &blob_pos_x, &blob_pos_y);
-    }
+    // if(blobs > 0){
+    //     blob_analyse(img, blobs, &blob_pos_x, &blob_pos_y);
+    // }
 }
 
 void
@@ -426,75 +444,80 @@ label_blobs(struct frame_t * frame, enum eConnected connected)
   Adjust to our needs
  */
 void
-blob_analyse(uint8_t *img, uint8_t blobcount, uint32_t* blob_pos_x, uint32_t* blob_pos_y)
+blob_analyse(struct frame_t * frame, uint8_t count, int32_t * position)
 {
      //blobinfo_t consist of:
      //Blob height (pixels)
      //Blob width (pixels)
      //Blob number of pixels
 
-    register int32_t i;
-    register uint32_t width = (FRAME_WIDTH - 1);
-    register uint32_t height = (FRAME_HEIGHT - 1);
-    register uint32_t w = width;
-    register uint32_t h = height;
-    uint32_t blob_mass[255];
-    uint32_t largest_blob = 0;
-    uint32_t min_width = width;
-    uint32_t max_width = 0;
-    uint32_t min_height = height;
-    uint32_t max_height = 0;
-    uint8_t (*imgArr)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&img[0];
+    // register int32_t i;
+    // register uint32_t width = (FRAME_WIDTH - 1);
+    // register uint32_t height = (FRAME_HEIGHT - 1);
+    // register uint32_t w = width;
+    // register uint32_t h = height;
+    // uint32_t blob_mass[255];
+    // uint32_t largest_blob = 0;
+    // uint32_t min_width = width;
+    // uint32_t max_width = 0;
+    // uint32_t min_height = height;
+    // uint32_t max_height = 0;
+    // uint8_t (*imgArr)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&img[0];
 
-    //Clear blob_mass registers
-    for(i = 255; i >= 0; i--){
-        blob_mass[i] = 0;
+    uint8_t masses[255];
+    register int i              = -1;
+    register uint32_t x         = 0;
+    register uint32_t y         = 0;
+    register uint32_t largest   = 0;
+    register uint16_t min[2]    = {FRAME_WIDTH, FRAME_HEIGHT};
+    register uint16_t max[2]    = {0, 0};
+
+    for (i = 0; i < count; i++) {
+        masses[i] = 0;
     }
 
-    //Calculate blob mass
-    for(i = (FRAME_SIZE - 1); i >= 0; i--){
-        if(img[i] > 0){
-            blob_mass[img[i]]++;
-        }
-    }
-
-    //Search for largest blob
-    for(i = blobcount; i > 0; i--){
-        if(blob_mass[i] > largest_blob){
-            largest_blob = blob_mass[i];
-        }
-    }
-
-    //Get coordinates
-    for(i = (FRAME_SIZE - 1); i >= 0; i--){
-        if(imgArr[h][w] == largest_blob){
-            //Calculate height
-            if(h < min_height){
-                min_height = h;
+    for (y = 0; y < FRAME_HEIGHT; y++) {
+        for (x = 0; x < FRAME_WIDTH; x++) {
+            if (frame->grayscale[y][x]) {
+                masses[frame->grayscale[y][x]]++;
             }
-            if(h > max_height){
-                max_height = h;
-            }
-
-            //Calculate width
-            if(w < min_width){
-                min_width = w;
-            }
-            if(w > max_width){
-                max_width = w;
-            }
-        }
-
-        if(w == width){
-          w = 0;
-          h--;
-        } else {
-          w--;
         }
     }
 
-    *blob_pos_y = (max_height - min_height) / 2;
-    *blob_pos_x = (max_width - min_width) / 2;
+    for (i = 1; i < count; i++) {
+        if (masses[i] > largest) {
+            largest = i;
+        }
+    }
+
+    if (largest == -1) {
+        position[0] = -1;
+        position[1] = -1;
+        return;
+    }
+
+
+    for (y = 0; y < FRAME_HEIGHT; y++) {
+        for (x = 0; x < FRAME_WIDTH; x++) {
+            if (frame->grayscale[y][x] == largest) {
+                if (x < min[0]) { min[0] = x; }
+                if (x > max[0]) { max[0] = x; }
+                if (y < min[1]) { min[1] = y; }
+                if (y > max[1]) { max[1] = y; }
+            }
+        }
+    }
+
+    // printf("X: (%d, %d)\n", min[0], max[0]);
+    // printf("Y: (%d, %d)\n", min[1], max[1]);
+
+    if ((max[0] - min[0]) && (max[1] - min[1])) {
+        position[0] = ((max[0] - min[0]) / 2 + min[0]);
+        position[1] = ((max[1] - min[1]) / 2 + min[1]);
+    } else {
+        position[0] = -1;
+        position[1] = -1;
+    }
 }
 
 /******************************************************************************
@@ -542,8 +565,8 @@ neighbour_count(struct frame_t * frame, uint16_t x, uint16_t y, uint8_t value, e
             (y < (FRAME_HEIGHT - 1) && frame->grayscale[y + 1][x] == value) +
             (x > 0 && y > 0 && frame->grayscale[y - 1][x - 1] == value) +
             (x < (FRAME_WIDTH - 1) && y > 0 && frame->grayscale[y - 1][x + 1] == value) +
-            (x < (FRAME_WIDTH - 1) && y < (FRAME_WIDTH - 1) && frame->grayscale[x + 1][y + 1] == value) +
-            (x > 0 && y < (FRAME_WIDTH - 1) && frame->grayscale[x - 1][y + 1] == value));
+            (x < (FRAME_WIDTH - 1) && y < (FRAME_HEIGHT - 1) && frame->grayscale[x + 1][y + 1] == value) +
+            (x > 0 && y < (FRAME_HEIGHT - 1) && frame->grayscale[x - 1][y + 1] == value));
 }
 
 uint8_t

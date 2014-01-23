@@ -65,6 +65,8 @@ camera_open(struct camera_t * camera, const int device)
     camera->device = cvCaptureFromCAM(device);
     cvSetCaptureProperty(camera->device, CV_CAP_PROP_FRAME_WIDTH, FRAME_WIDTH);
     cvSetCaptureProperty(camera->device, CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT);
+    // cvSetCaptureProperty(camera->device, CV_CAP_PROP_CONTRAST, 0);
+    // cvSetCaptureProperty(camera->device, CV_CAP_PROP_SATURATION, 127);
 
     return camera->device ? 0 : -1;
 }

@@ -19,7 +19,7 @@ servo_set_position(register const uint8_t io, register const float position, reg
     if (cycle < servo_min) { cycle = servo_min; }
     if (cycle > servo_max) { cycle = servo_max; }
 
-    LOG_INFO("Duty cycle for %f degrees: %d", position, cycle);
+    // LOG_INFO("Duty cycle for %f degrees: %d", position, cycle);
 
     pwm_set_duty_cycle(io, cycle);
 }
