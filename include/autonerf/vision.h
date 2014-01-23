@@ -39,6 +39,9 @@ extern void vision_process(uint8_t* img, uint16_t * pan, uint16_t * tilt);
  */
 extern void contrast_stretch_fast(uint8_t* img);
 
+extern void erode(struct frame_t * frame, uint8_t threshold, enum eConnected connected);
+extern void threshold(uint8_t * img, uint8_t low, uint8_t high);
+
 /**
  Automatic threshold to a grayscale image
 
@@ -53,7 +56,7 @@ extern void threshold_iso_data(uint8_t* img, enum eBrightness brightness);
  @param img the image
  @param connected four or eight connected pixels
  */
-extern void fill_holes(uint8_t* img, enum eConnected connected);
+extern void fill_holes(struct frame_t * frame, enum eConnected connected);
 
 /**
  Removes the border blobs.
@@ -69,16 +72,14 @@ extern void remove_border_blobs(uint8_t* img, enum eConnected connected);
  @param img the image
  @param connected four or eight connected pixels
  */
-extern uint32_t label_blobs(uint8_t* img, enum eConnected connected);
+extern uint32_t label_blobs(struct frame_t * frame, enum eConnected connected);
 
 /**
  Analyses the image and returns the coordinates of the largest blob.
 
  @param img the image
  @param blobcount the number of blobs
- @param blob_pos_x the x center position of the blob
- @param blob_pos_y the y center position of the blob
  */
-extern void blob_analyse(uint8_t *img, uint8_t blobcount, uint32_t* blob_pos_x, uint32_t* blob_pos_y);
+extern void blob_analyse(struct frame_t * frame, uint8_t count, int32_t * position);
 
 #endif /* AUTONERF_VISION_H */

@@ -53,14 +53,16 @@ launcher_shoot_next(void)
 }
 
 void
-launcher_aim(const uint8_t x, const uint8_t y)
+launcher_aim(const int16_t x, const int16_t y)
 {
     // Calculate offset from center of X and Y axis
-    uint8_t offset[] = { ((FRAME_WIDTH / 2) - x), ((FRAME_HEIGHT / 2) - y) };
+    // uint8_t offset[] = { ((FRAME_WIDTH / 2) - x), ((FRAME_HEIGHT / 2) - y) };
 
-    // Calculate angular difference of X and Y axis
-    control_set_pan_delta(offset[0] * _phi);
-    control_set_tilt_delta(offset[1] * _phi);
+    // // Calculate angular difference of X and Y axis
+    // control_set_pan_delta((float) offset[0] * _phi);
+    // control_set_tilt_delta((float) offset[1] * _phi);
+    control_set_pan_delta((float) x * _phi);
+    control_set_tilt_delta((float) y * _phi);
 }
 
 void
@@ -68,7 +70,7 @@ launcher_init(void)
 {
     memset(_loaded, 1, 10);
 
-    _phi            = (45 / sqrt(pow(FRAME_WIDTH, 2) + pow(FRAME_HEIGHT, 2)));
+    _phi            = -1 * (45 / sqrt(pow(FRAME_WIDTH, 2) + pow(FRAME_HEIGHT, 2)));
     _chamber[0]     = gpio_calculate(2, 14);    gpio_init(_chamber[0], 0); gpio_write(_chamber[0], 0);
     _chamber[1]     = gpio_calculate(2, 12);    gpio_init(_chamber[1], 0); gpio_write(_chamber[1], 0);
     _chamber[2]     = gpio_calculate(2, 10);    gpio_init(_chamber[2], 0); gpio_write(_chamber[2], 0);
@@ -87,6 +89,9 @@ launcher_init(void)
 
     gpio_write(_disabled, 1);
     gpio_write(_reload_led, 0);
+
+    control_set_pan(90);
+    control_set_tilt(90);
 
     control_init();
 }

@@ -1,30 +1,48 @@
+#include <stdio.h>
 #include <autonerf/vision.h>
 
 //Local prototypes
 void threshold(uint8_t* img, uint8_t low, uint8_t high);
 void histogram(uint8_t* img, uint16_t *hist, uint32_t *sum);
-uint8_t neighbour_count(uint8_t* img, uint16_t x, uint16_t y, uint8_t value, enum eConnected connected);
-uint8_t neighbours_equal_or_higher(uint8_t* img, uint16_t x, uint16_t y, uint8_t value, enum eConnected connected);
+uint8_t neighbour_count(struct frame_t * frame, uint16_t x, uint16_t y, uint8_t value, enum eConnected connected);
+uint8_t neighbours_equal_or_higher(struct frame_t * frame, uint16_t x, uint16_t y, uint8_t value, enum eConnected connected);
 void set_selected_to_value(uint8_t* img, uint8_t selected, uint8_t value);
+
+void
+erode(struct frame_t * frame, uint8_t thres, enum eConnected connected)
+{
+    register uint32_t x = 0;
+    register uint32_t y = 0;
+
+    for (y = 0; y < FRAME_HEIGHT; y++) {
+        for (x = 0; x < FRAME_WIDTH; x++) {
+            if (frame->grayscale[y][x]) {
+                if (neighbour_count(frame, x, y, frame->grayscale[y][x], connected) < thres) {
+                    frame->grayscale[y][x] = 0;
+                }
+            }
+        }
+    }
+}
 
 void
 vision_process(uint8_t* img, uint16_t * pan, uint16_t * tilt)
 {
-    uint8_t blobs;
-    uint32_t blob_pos_x = 0;
-    uint32_t blob_pos_y = 0;
-    pan = 0;
-    tilt = 0;
+    // uint8_t blobs;
+    // uint32_t blob_pos_x = 0;
+    // uint32_t blob_pos_y = 0;
+    // pan = 0;
+    // tilt = 0;
 
-    contrast_stretch_fast(img);
-    threshold_iso_data(img, DARK);
-    fill_holes(img, FOUR);
-    remove_border_blobs(img, EIGHT);
-    blobs = label_blobs(img, EIGHT);
+    // contrast_stretch_fast(img);
+    // threshold_iso_data(img, DARK);
+    // // fill_holes(img, FOUR);
+    // remove_border_blobs(img, EIGHT);
+    // blobs = label_blobs(img, EIGHT);
 
-    if(blobs > 0){
-        blob_analyse(img, blobs, &blob_pos_x, &blob_pos_y);
-    }
+    // if(blobs > 0){
+    //     blob_analyse(img, blobs, &blob_pos_x, &blob_pos_y);
+    // }
 }
 
 void
@@ -76,126 +94,129 @@ contrast_stretch_fast(uint8_t* img)
 }
 
 void
-threshold_iso_data(uint8_t* img, enum eBrightness brightness)
+threshold_iso_data(uint8_t * img, enum eBrightness brightness)
 {
-  uint16_t hist[256];
+  uint16_t hist[256] = {0};
   uint32_t som;
-  register uint8_t average = 0;
-  register int32_t  i;
-
-  /* Set histogram to 0 */
-  for(i = 255; i >= 0; i--){
-      hist[i] = 0;
-  }
+  register uint32_t i;
+  register uint32_t T;    //T[i]
+  register uint32_t TiMO; //T[i - 1]
+  register uint32_t MAT;
+  register uint32_t MBT;
+  register uint32_t noPixL;
+  register uint32_t noPixR;
+  register uint32_t somL;
+  register uint32_t somR;
 
   histogram(img, &hist[0], &som);
 
-  /* Determin start point */
+  //Step 1: Compute mean from histogram; T
   for(i = 0; hist[i] > 0; i++){
     continue;
   }
 
-  /* Calculate average */
-  average = (uint8_t)(i + (int32_t)(som / FRAME_SIZE));
+  T = i + (som / (FRAME_WIDTH * FRAME_HEIGHT));
+
+  //Step 2: Compute mean above T (MAT) and mean below T (MBT)
+  do{
+      noPixL = 0;
+      noPixR = 0;
+      somL   = 0;
+      somR   = 0;
+      TiMO = T;
+
+      //Left values (including threshold mean)
+      for(i = (T + 1); i > 0; i--){
+        somL += hist[i - 1] * (i - 1);
+        noPixL += hist[i - 1];
+      }
+      //Right values (excluding threshold mean)
+      for(i = 255; i > T; i--){
+        somR += hist[i] * i;
+        noPixR += hist[i];
+      }
+
+      if(noPixL != 0){
+          MBT = (uint32_t)(somL / noPixL);
+      } else {
+          MBT = 0;
+      }
+      if(noPixR != 0){
+          MAT = (uint32_t)(somR / noPixR);
+      } else {
+          MAT = 0;
+      }
+
+  //Step 3: Compute mean; repeat step 2 + 3 if T[i] != T[i-1]
+      T = (MAT + MBT) / 2;
+  }while(T != TiMO);
+
+  //Threshold
   if(brightness == DARK){
-    threshold(img, 0, average);
+    threshold(img, 0, T);
   } else {
-    threshold(img, average, 255);
+    threshold(img, T, 255);
   }
 }
 
 void
-fill_holes(uint8_t* img, enum eConnected connected)
+fill_holes(struct frame_t * frame, enum eConnected connected)
 {
-    register uint32_t width  = FRAME_WIDTH - 1;
-    register uint32_t height = FRAME_HEIGHT - 1;
-    register int32_t w;
-    register int32_t h;
-    register int32_t wf;
-    register int32_t hf;
-    register int32_t i;
-    register uint32_t unfinished;
-    uint8_t (*imgArr)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&img[0];
+    register uint32_t x    = 0;
+    register uint32_t y    = 0;
+    register uint8_t  done = 0;
 
-    // Mark the border, exept the blobs
-    //Horisontal
-    for(w = width; w >= 0; w--){
-        if(imgArr[0][w] == 0){
-            imgArr[0][w] = 2;
+    // Mark horizontal and vertical borders
+    for (x = 0; x < FRAME_WIDTH; x++) {
+        if (frame->grayscale[0][x] == 0) {
+            frame->grayscale[0][x] = 2;
         }
-        if(imgArr[height][w] == 0){
-            imgArr[height][w] = 2;
+        if (frame->grayscale[FRAME_HEIGHT - 1][x] == 0) {
+            frame->grayscale[FRAME_HEIGHT - 1][x] = 2;
         }
     }
 
-    //Vertical
-    for(h = height; h >= 0; h--){
-        if(imgArr[h][0] == 0){
-            imgArr[h][0] = 2;
+    for (y = 0; y < FRAME_HEIGHT; y++) {
+        if (frame->grayscale[y][0] == 0) {
+            frame->grayscale[y][0] = 2;
         }
-        if(imgArr[h][width] == 0){
-            imgArr[h][width] = 2;
+        if (frame->grayscale[y][FRAME_WIDTH - 1] == 0) {
+            frame->grayscale[y][FRAME_WIDTH - 1] = 2;
         }
     }
 
-    /* Go over the rest of the image */
-    do{
-        //Mark the image form L->R and R->L
-        w  = width;
-        h  = height;
-        wf = 0;
-        hf = 0;
+    // Mark pixels that are not part of a blob but are connected to the border
+    while (!done) {
+        done = 1;
 
-        for(i = FRAME_SIZE; i > 0; i--){
-            //Top left -> lower right
-            if(imgArr[hf][wf] == 0){
-                if(neighbour_count(img, wf, hf, 2, connected) > 0){
-                    imgArr[hf][wf] = 2;
+        for (y = 0; y < FRAME_HEIGHT; y++) {
+            for (x = 0; x < FRAME_WIDTH; x++) {
+                if (!frame->grayscale[y][x] && neighbour_count(frame, x, y, 2, connected) > 0) {
+                    frame->grayscale[y][x] = 2;
                 }
-            }
-
-            //Lower right -> top left
-            if(imgArr[h][w] == 0){
-                if(neighbour_count(img, w, h, 2, connected) > 0){
-                    imgArr[h][w] = 2;
-                }
-            }
-
-            if(w == 0){
-                w = width;
-                wf = 0;
-                h--;
-                hf++;
-            } else {
-                w--;
-                wf++;
             }
         }
 
-        //Check whether the blob is compleetly marked
-        unfinished = 0;
-        w = width;
-        h = height;
-
-        for(i = FRAME_SIZE; i > 0; i--){
-            if(imgArr[h][w] == 0){
-                if(neighbour_count(img, w, h, 2, connected) > 0){
-                    unfinished = 1;
-                    break;
+        for (y = FRAME_HEIGHT; y > 0; y--) {
+            for (x = FRAME_WIDTH; x > 0; x--) {
+                if (!frame->grayscale[(y - 1)][(x - 1)] && neighbour_count(frame, (x - 1), (y - 1), 2, connected) > 0) {
+                    frame->grayscale[(y - 1)][(x - 1)] = 2;
                 }
             }
+        }
 
-            if(w == 0){
-                w = width;
-                h--;
-            } else {
-                w--;
+        for (y = 0; y < FRAME_HEIGHT; y++) {
+            for (x = 0; x < FRAME_WIDTH; x++) {
+                if (!frame->grayscale[y][x] && neighbour_count(frame, x, y, 2, connected) > 0) {
+                    done                   = 0;
+                    frame->grayscale[y][x] = 2;
+                }
             }
         }
-    }while(unfinished == 1);
+    }
 
-    set_selected_to_value(img, 0, 1);
-    set_selected_to_value(img, 2, 0);
+    set_selected_to_value((uint8_t *) frame->grayscale, 0, 1);
+    set_selected_to_value((uint8_t *) frame->grayscale, 2, 0);
 }
 
 void
@@ -237,16 +258,16 @@ remove_border_blobs(uint8_t* img, enum eConnected connected)
 
             //Lower right -> top left
             if(img[i] == 1){
-                if(neighbour_count(img, w, h, 2, connected) > 0){
+                // if(neighbour_count(img, w, h, 2, connected) > 0){
                     img[i] = 2;
-                }
+                // }
             }
 
             //Top left -> lower right
             if(img[size - i] == 1){
-                if(neighbour_count(img, wf, hf, 2, connected) > 0){
+                // if(neighbour_count(img, wf, hf, 2, connected) > 0){
                     img[size - i] = 2;
-                }
+                // }
             }
 
             if(w == 0){
@@ -268,10 +289,10 @@ remove_border_blobs(uint8_t* img, enum eConnected connected)
         for(i = size; i >= 0; i--){
 
             if(img[i] == 1){
-                if(neighbour_count(img, w, h, 2, connected) > 0){
+                // if(neighbour_count(img, w, h, 2, connected) > 0){
                     unfinished = 1;
                     break;
-                }
+                // }
             }
 
             if(w == 0){
@@ -287,298 +308,216 @@ remove_border_blobs(uint8_t* img, enum eConnected connected)
 }
 
 uint32_t
-label_blobs(uint8_t* img, enum eConnected connected)
+label_blobs(struct frame_t * frame, enum eConnected connected)
 {
-    register uint32_t blobCount = 1;
-    register int32_t h;
-    register int32_t w;
-    register int32_t oh;
-    register int32_t ow;
-    register int32_t height = (int32_t)(FRAME_HEIGHT - 1);
-    register int32_t width = (int32_t)(FRAME_WIDTH - 1);
-    register int32_t i;
-    register uint16_t j;
-    register uint8_t foundFlag = 0;
-    register uint8_t finished;
-    register uint8_t lowest;
-    register uint8_t blobDetected = 0;
-    register uint8_t counter = 0;
-    register int32_t size = (int32_t)(FRAME_SIZE - 1);
-    register int32_t wp;
-    register int32_t wm;
-    register int32_t hp;
-    register int32_t hm;
-    uint8_t (*imgArr)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&img[0];
+    register uint32_t x       = 0;
+    register uint32_t y       = 0;
+    register uint32_t i       = 0;
+    register uint32_t dx      = 0;
+    register uint32_t dy      = 0;
+    register uint32_t count   = 0;
+    register uint8_t  changed = 1;
 
-    set_selected_to_value(img, 1, 255); //<-- modify threshold
+    set_selected_to_value((uint8_t *) frame->grayscale, 1, 255);
 
-    //Label the blobs
-    w = 0;
-    h = 0;
+    while (changed) {
+        changed = 0;
 
-    for(i = size; i >= 0; i--){
-        //If this pixel has to be labled
-        if(imgArr[h][w] == 255){
-            blobDetected = 1;
-            if(neighbour_count(img, w, h, blobCount, connected) > 0){ //If this blob is labeled
-                imgArr[h][w] = blobCount;
-            } else { //This blob might be labeled with a lower number or is a new blob
-                for(j = blobCount; j != 0; j--){ //Check what number the neighbour might be
-                    if(neighbour_count(img, w, h, j, connected) > 0){
-                        foundFlag = 1;
-                        break;
+        for (y = 0; y < FRAME_HEIGHT; y++) {
+            for (x = 0; x < FRAME_WIDTH; x++) {
+                if (frame->grayscale[y][x]) {
+                    register uint8_t lowest = frame->grayscale[y][x];
+
+                    if (x > 0 && frame->grayscale[y][x - 1] && frame->grayscale[y][x - 1] < lowest) {
+                        lowest = frame->grayscale[y][x - 1];
+                    }
+                    if (x < (FRAME_WIDTH - 1) && frame->grayscale[y][x + 1] && frame->grayscale[y][x + 1] < lowest) {
+                        lowest = frame->grayscale[y][x + 1];
+                    }
+                    if (y > 0 && frame->grayscale[y - 1][x] && frame->grayscale[y - 1][x] < lowest) {
+                        lowest = frame->grayscale[y - 1][x];
+                    }
+                    if (y < (FRAME_HEIGHT - 1) && frame->grayscale[y + 1][x] && frame->grayscale[y + 1][x] < lowest) {
+                        lowest = frame->grayscale[y + 1][x];
+                    }
+                    if (connected == EIGHT) {
+                        if (x > 0 && y > 0 &&
+                            frame->grayscale[y - 1][x - 1] &&
+                            frame->grayscale[y - 1][x - 1] < lowest) {
+                            lowest = frame->grayscale[y - 1][x - 1];
+                        }
+                        if (x < (FRAME_WIDTH - 1) && y > 0 &&
+                            frame->grayscale[y - 1][x + 1] &&
+                            frame->grayscale[y - 1][x + 1] < lowest) {
+                            lowest = frame->grayscale[y - 1][x + 1];
+                        }
+                        if (x < (FRAME_WIDTH - 1) && y < (FRAME_HEIGHT - 1) &&
+                            frame->grayscale[y + 1][x + 1] &&
+                            frame->grayscale[y + 1][x + 1] < lowest) {
+                            lowest = frame->grayscale[y + 1][x + 1];
+                        }
+                        if (x > 0 && y < (FRAME_HEIGHT - 1) &&
+                            frame->grayscale[y + 1][x - 1] &&
+                            frame->grayscale[y + 1][x - 1] < lowest) {
+                            lowest = frame->grayscale[y + 1][x - 1];
+                        }
+                    }
+                    if (lowest < frame->grayscale[y][x]) {
+                        changed                 = 1;
+                        frame->grayscale[y][x]  = lowest;
+                    } else if (frame->grayscale[y][x] == 255) {
+                        changed                 = 1;
+                        frame->grayscale[y][x]  = count++;
                     }
                 }
-
-                if(foundFlag){ //If this pixel is part of a labeled blob, set the right number
-                    imgArr[h][w] = j;
-                    foundFlag = 0;
-                } else { //Otherwise, label this as a new blob
-                    blobCount += 1;
-                    imgArr[h][w] = blobCount;
-                }
-
             }
         }
 
-        if(w == width){
-          w = 0;
-          h++;
-        } else {
-          w++;
+        for (dy = FRAME_HEIGHT; dy > 0; dy--) {
+            for (dx = FRAME_WIDTH; dx > 0; dx--) {
+                y = dy - 1;
+                x = dx - 1;
+
+                if (frame->grayscale[y][x]) {
+                    register uint8_t lowest = frame->grayscale[y][x];
+
+                    if (x > 0 && frame->grayscale[y][x - 1] && frame->grayscale[y][x - 1] < lowest) {
+                        lowest = frame->grayscale[y][x - 1];
+                    }
+                    if (x < (FRAME_WIDTH - 1) && frame->grayscale[y][x + 1] && frame->grayscale[y][x + 1] < lowest) {
+                        lowest = frame->grayscale[y][x + 1];
+                    }
+                    if (y > 0 && frame->grayscale[y - 1][x] && frame->grayscale[y - 1][x] < lowest) {
+                        lowest = frame->grayscale[y - 1][x];
+                    }
+                    if (y < (FRAME_HEIGHT - 1) && frame->grayscale[y + 1][x] && frame->grayscale[y + 1][x] < lowest) {
+                        lowest = frame->grayscale[y + 1][x];
+                    }
+                    if (connected == EIGHT) {
+                        if (x > 0 && y > 0 &&
+                            frame->grayscale[y - 1][x - 1] &&
+                            frame->grayscale[y - 1][x - 1] < lowest) {
+                            lowest = frame->grayscale[y - 1][x - 1];
+                        }
+                        if (x < (FRAME_WIDTH - 1) && y > 0 &&
+                            frame->grayscale[y - 1][x + 1] &&
+                            frame->grayscale[y - 1][x + 1] < lowest) {
+                            lowest = frame->grayscale[y - 1][x + 1];
+                        }
+                        if (x < (FRAME_WIDTH - 1) && y < (FRAME_HEIGHT - 1) &&
+                            frame->grayscale[y + 1][x + 1] &&
+                            frame->grayscale[y + 1][x + 1] < lowest) {
+                            lowest = frame->grayscale[y + 1][x + 1];
+                        }
+                        if (x > 0 && y < (FRAME_HEIGHT - 1) &&
+                            frame->grayscale[y + 1][x - 1] &&
+                            frame->grayscale[y + 1][x - 1] < lowest) {
+                            lowest = frame->grayscale[y + 1][x - 1];
+                        }
+                    }
+                    if (lowest < frame->grayscale[y][x]) {
+                        changed                 = 1;
+                        frame->grayscale[y][x]  = lowest;
+                    } else if (frame->grayscale[y][x] == 255) {
+                        changed                 = 1;
+                        frame->grayscale[y][x]  = count++;
+                    }
+                }
+            }
         }
     }
 
-    if(blobDetected == 0){
-        return 0;
-    }
+    count = 0;
 
-    do{
-        //Complete labeling the blobs from the lower right corner to upper left corner
-        w = width;
-        h = height;
-        ow = 0;
-        oh = 0;
-
-        for(i = size; i >= 0; i--){
-
-            if(imgArr[h][w] > 0){
-                lowest = imgArr[h][w];
-
-                //Check behind for lowest value with a exeption to 0
-                if(h < FRAME_HEIGHT){
-                    if(w < FRAME_WIDTH){
-                        //Pre calculate
-                        wp = w + 1;
-                        hp = h + 1;
-
-                        //
-                        if((imgArr[hp][wp] < lowest) && (imgArr[hp][wp] > 0) && (connected == EIGHT)){
-                            lowest = imgArr[hp][wp];
-                        }
-                        if((imgArr[h][wp] < lowest) && (imgArr[h][wp] > 0)){
-                            lowest = imgArr[h][wp];
-                        }
-                    }
-                    if((imgArr[hp][w] < lowest) && (imgArr[hp][w] > 0)){
-                        lowest = imgArr[hp][w];
-                    }
-                    if(w > 0){
-                        wm = w - 1;
-
-                        if((imgArr[hp][wm] < lowest) && (imgArr[hp][wm] > 0)  && (connected == EIGHT)){
-                            lowest = imgArr[hp][wm];
-                        }
-                    }
-                }
-
-                imgArr[h][w] = lowest;
+    for (y = 0; y < FRAME_HEIGHT; y++) {
+        for (x = 0; x < FRAME_WIDTH; x++) {
+            if (frame->grayscale[y][x] && frame->grayscale[y][x] > count) {
+                set_selected_to_value((uint8_t *) frame->grayscale, frame->grayscale[y][x], ++count);
             }
-
-            if(w == 0){
-              w = width;
-              ow = 0;
-              h--;
-              oh++;
-            } else {
-              w--;
-              ow++;
-            }
-        }
-
-        //Complete labeling the blobs from the lower upper left to right corner corner
-        w = 0;
-        h = 0;
-
-        for(i = size; i >= 0; i--){
-
-            if(imgArr[h][w] > 0){
-                lowest = imgArr[h][w];
-
-                //Check behind for lowest value with a exeption to 0
-                if(h > 0){
-                    if(w > 0){
-                        //Pre-calculate
-                        wm = w - 1;
-                        hm = h - 1;
-
-                        if((imgArr[hm][wm] < lowest) && (imgArr[hm][wm] > 0) && (connected == EIGHT)){
-                            lowest = imgArr[hm][wm];
-                        }
-                        if((imgArr[h][wm] < lowest) && (imgArr[h][wm] > 0)){
-                            lowest = imgArr[h][wm];
-                        }
-                    }
-                    if((imgArr[hm][w] < lowest) && (imgArr[hm][w] > 0)){
-                        lowest = imgArr[hm][w];
-                    }
-                    if(w < FRAME_WIDTH){
-                        //Pre-calculate
-                        wp = w + 1;
-
-                        if((imgArr[hm][wp] < lowest) && (imgArr[hm][wp] > 0) && (connected == EIGHT)){
-                            lowest = imgArr[hm][wp];
-                        }
-                    }
-                }
-
-                imgArr[h][w] = lowest;
-            }
-
-            if(w == width){
-              w = 0;
-              h++;
-            } else {
-              w++;
-            }
-        }
-
-        finished = 0;
-
-        //Check whether 1 blob still has 2 labeles
-        w = 0;
-        h = 0;
-
-        for(i = size; i >= 0; i--){
-            if(imgArr[h][w] > 0){
-                if(neighbours_equal_or_higher(img, w, h, (imgArr[h][w] + 1), connected) > 0){
-                    finished = 1;
-                    break;
-                }
-            }
-
-            if(w == width){
-              w = 0;
-              h++;
-            } else {
-              w++;
-            }
-        }
-
-        counter++;
-    }while(finished == 1 && counter < 10);
-
-    //Re-label the blobs from 1 to x blobs
-    blobCount = 0;
-    w = 0;
-    h = 0;
-
-    for(i = size; i >= 0; i--){
-        if(imgArr[h][w] > 0){
-            if(imgArr[h][w] == (blobCount + 1)){
-                //If current blob is in order of labeld blobs
-                blobCount += 1;
-            } else if(imgArr[h][w] > (blobCount + 1)){
-                //If current blob is more than 1 higher then previous blob, re-label
-                blobCount += 1;
-                set_selected_to_value(img, imgArr[h][w], blobCount);
-            }
-        }
-
-        if(w == width){
-          w = 0;
-          h++;
-        } else {
-          w++;
         }
     }
 
-    return blobCount;
+    return count;
 }
 
 /**
   Adjust to our needs
  */
 void
-blob_analyse(uint8_t *img, uint8_t blobcount, uint32_t* blob_pos_x, uint32_t* blob_pos_y)
+blob_analyse(struct frame_t * frame, uint8_t count, int32_t * position)
 {
      //blobinfo_t consist of:
      //Blob height (pixels)
      //Blob width (pixels)
      //Blob number of pixels
 
-    register int32_t i;
-    register uint32_t width = (FRAME_WIDTH - 1);
-    register uint32_t height = (FRAME_HEIGHT - 1);
-    register uint32_t w = width;
-    register uint32_t h = height;
-    uint32_t blob_mass[255];
-    uint32_t largest_blob = 0;
-    uint32_t min_width = width;
-    uint32_t max_width = 0;
-    uint32_t min_height = height;
-    uint32_t max_height = 0;
-    uint8_t (*imgArr)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&img[0];
+    // register int32_t i;
+    // register uint32_t width = (FRAME_WIDTH - 1);
+    // register uint32_t height = (FRAME_HEIGHT - 1);
+    // register uint32_t w = width;
+    // register uint32_t h = height;
+    // uint32_t blob_mass[255];
+    // uint32_t largest_blob = 0;
+    // uint32_t min_width = width;
+    // uint32_t max_width = 0;
+    // uint32_t min_height = height;
+    // uint32_t max_height = 0;
+    // uint8_t (*imgArr)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&img[0];
 
-    //Clear blob_mass registers
-    for(i = 255; i >= 0; i--){
-        blob_mass[i] = 0;
+    uint8_t masses[255];
+    register int i              = -1;
+    register uint32_t x         = 0;
+    register uint32_t y         = 0;
+    register uint32_t largest   = 0;
+    register uint16_t min[2]    = {FRAME_WIDTH, FRAME_HEIGHT};
+    register uint16_t max[2]    = {0, 0};
+
+    for (i = 0; i < count; i++) {
+        masses[i] = 0;
     }
 
-    //Calculate blob mass
-    for(i = (FRAME_SIZE - 1); i >= 0; i--){
-        if(img[i] > 0){
-            blob_mass[img[i]]++;
-        }
-    }
-
-    //Search for largest blob
-    for(i = blobcount; i > 0; i--){
-        if(blob_mass[i] > largest_blob){
-            largest_blob = blob_mass[i];
-        }
-    }
-
-    //Get coordinates
-    for(i = (FRAME_SIZE - 1); i >= 0; i--){
-        if(imgArr[h][w] == largest_blob){
-            //Calculate height
-            if(h < min_height){
-                min_height = h;
+    for (y = 0; y < FRAME_HEIGHT; y++) {
+        for (x = 0; x < FRAME_WIDTH; x++) {
+            if (frame->grayscale[y][x]) {
+                masses[frame->grayscale[y][x]]++;
             }
-            if(h > max_height){
-                max_height = h;
-            }
-
-            //Calculate width
-            if(w < min_width){
-                min_width = w;
-            }
-            if(w > max_width){
-                max_width = w;
-            }
-        }
-
-        if(w == width){
-          w = 0;
-          h--;
-        } else {
-          w--;
         }
     }
 
-    *blob_pos_y = (max_height - min_height) / 2;
-    *blob_pos_x = (max_width - min_width) / 2;
+    for (i = 1; i < count; i++) {
+        if (masses[i] > largest) {
+            largest = i;
+        }
+    }
+
+    if (largest == -1) {
+        position[0] = -1;
+        position[1] = -1;
+        return;
+    }
+
+
+    for (y = 0; y < FRAME_HEIGHT; y++) {
+        for (x = 0; x < FRAME_WIDTH; x++) {
+            if (frame->grayscale[y][x] == largest) {
+                if (x < min[0]) { min[0] = x; }
+                if (x > max[0]) { max[0] = x; }
+                if (y < min[1]) { min[1] = y; }
+                if (y > max[1]) { max[1] = y; }
+            }
+        }
+    }
+
+    // printf("X: (%d, %d)\n", min[0], max[0]);
+    // printf("Y: (%d, %d)\n", min[1], max[1]);
+
+    if ((max[0] - min[0]) && (max[1] - min[1])) {
+        position[0] = ((max[0] - min[0]) / 2 + min[0]);
+        position[1] = ((max[1] - min[1]) / 2 + min[1]);
+    } else {
+        position[0] = -1;
+        position[1] = -1;
+    }
 }
 
 /******************************************************************************
@@ -611,145 +550,43 @@ histogram(uint8_t* src, uint16_t *hist, uint32_t *sum)
 }
 
 uint8_t
-neighbour_count(uint8_t* src, uint16_t x, uint16_t y, uint8_t value, enum eConnected connected)
+neighbour_count(struct frame_t * frame, uint16_t x, uint16_t y, uint8_t value, enum eConnected connected)
 {
-  register uint8_t nrOfNeighbours = 0;
-  register uint8_t xMore = x > 0;
-  register uint8_t xLess = x < FRAME_WIDTH;
-  register uint8_t yMore = y > 0;
-  register uint8_t yLess = y < FRAME_HEIGHT;
-  register uint16_t xMin = x;
-  register uint16_t xMax = x;
-  register uint16_t yMin = y;
-  register uint16_t yMax = y;
-  uint8_t (*img)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&src[0];
-
-  if(xMore){ //Left value
-    xMin = x - 1;
-    if(img[y][xMin] == value){
-      nrOfNeighbours++;
-    }
-  }
-
-  if(xLess){ //Right value
-    xMax = x + 1;
-    if(img[y][xMax] == value){
-      nrOfNeighbours++;
-    }
-  }
-
-  if(yMore){ //Upper value
-    yMin = y - 1;
-    if(img[yMin][x] == value){
-      nrOfNeighbours++;
-    }
-  }
-
-  if(yLess){ //Lower value
-    yMax = y + 1;
-    if(img[yMax][x] == value){
-      nrOfNeighbours++;
-    }
-  }
-
-  if(connected == EIGHT){
-    if(xMore && yMore){ //Left upper value
-      if(img[yMin][xMin] == value){
-        nrOfNeighbours++;
-      }
+    if (connected == FOUR) {
+        return ((x > 0 && frame->grayscale[y][x - 1] == value) +
+                (x < (FRAME_WIDTH - 1) && frame->grayscale[y][x + 1] == value) +
+                (y > 0 && frame->grayscale[y - 1][x] == value) +
+                (y < (FRAME_HEIGHT - 1) && frame->grayscale[y + 1][x] == value));
     }
 
-    if(xLess && yMore){ //Right upper value
-      if(img[yMin][xMax] == value){
-        nrOfNeighbours++;
-      }
-    }
-
-    if(xMore && yLess){ //Left lower value
-      if(img[yMax][xMin] == value){
-        nrOfNeighbours++;
-      }
-    }
-
-    if(xLess && yLess){ //Right lower value
-      if(img[yMax][xMax] == value){
-        nrOfNeighbours++;
-      }
-    }
-  }
-
-  return nrOfNeighbours;
+    return ((x > 0 && frame->grayscale[y][x - 1] == value) +
+            (x < (FRAME_WIDTH - 1) && frame->grayscale[y][x + 1] == value) +
+            (y > 0 && frame->grayscale[y - 1][x] == value) +
+            (y < (FRAME_HEIGHT - 1) && frame->grayscale[y + 1][x] == value) +
+            (x > 0 && y > 0 && frame->grayscale[y - 1][x - 1] == value) +
+            (x < (FRAME_WIDTH - 1) && y > 0 && frame->grayscale[y - 1][x + 1] == value) +
+            (x < (FRAME_WIDTH - 1) && y < (FRAME_HEIGHT - 1) && frame->grayscale[x + 1][y + 1] == value) +
+            (x > 0 && y < (FRAME_HEIGHT - 1) && frame->grayscale[x - 1][y + 1] == value));
 }
 
 uint8_t
-neighbours_equal_or_higher(uint8_t* src, uint16_t x, uint16_t y, uint8_t value, enum eConnected connected)
+neighbours_equal_or_higher(struct frame_t * frame, uint16_t x, uint16_t y, uint8_t value, enum eConnected connected)
 {
-  register uint8_t nrOfNeighbours = 0;
-  register uint8_t xMore = x > 0;
-  register uint8_t xLess = x < FRAME_WIDTH;
-  register uint8_t yMore = y > 0;
-  register uint8_t yLess = y < FRAME_HEIGHT;
-  register uint16_t xMin = x;
-  register uint16_t xMax = x;
-  register uint16_t yMin = y;
-  register uint16_t yMax = y;
-  uint8_t (*img)[FRAME_HEIGHT] = (uint8_t (*)[FRAME_HEIGHT])&src[0];
-
-  if(xMore){ //Left value
-    xMin = x - 1;
-    if(img[y][xMin] >= value){
-      nrOfNeighbours++;
-    }
-  }
-
-  if(xLess){ //Right value
-    xMax = x + 1;
-    if(img[y][xMax] >= value){
-      nrOfNeighbours++;
-    }
-  }
-
-  if(yMore){ //Upper value
-    yMin = y - 1;
-    if(img[yMin][x] >= value){
-      nrOfNeighbours++;
-    }
-  }
-
-  if(yLess){ //Lower value
-    yMax = y + 1;
-    if(img[yMax][x] >= value){
-      nrOfNeighbours++;
-    }
-  }
-
-  if(connected >= EIGHT){
-    if(xMore && yMore){ //Left upper value
-      if(img[yMin][xMin] >= value){
-        nrOfNeighbours++;
-      }
+    if (connected == FOUR) {
+        return ((x > 0 && frame->grayscale[y][x - 1] >= value) +
+                (x < (FRAME_WIDTH - 1) && frame->grayscale[y][x + 1] >= value) +
+                (y > 0 && frame->grayscale[y - 1][x] >= value) +
+                (y < (FRAME_HEIGHT - 1) && frame->grayscale[y + 1][x] >= value));
     }
 
-    if(xLess && yMore){ //Right upper value
-      if(img[yMin][xMax] >= value){
-        nrOfNeighbours++;
-      }
-    }
-
-    if(xMore && yLess){ //Left lower value
-      if(img[yMax][xMin] >= value){
-        nrOfNeighbours++;
-      }
-    }
-
-    if(xLess && yLess){ //Right lower value
-      if(img[yMax][xMax] >= value){
-        nrOfNeighbours++;
-      }
-    }
-  }
-
-  return nrOfNeighbours;
+    return ((x > 0 && frame->grayscale[y][x - 1] >= value) +
+            (x < (FRAME_WIDTH - 1) && frame->grayscale[y][x + 1] >= value) +
+            (y > 0 && frame->grayscale[y - 1][x] >= value) +
+            (y < (FRAME_HEIGHT - 1) && frame->grayscale[y + 1][x] >= value) +
+            (x > 0 && y > 0 && frame->grayscale[y - 1][x - 1] >= value) +
+            (x < (FRAME_WIDTH - 1) && y > 0 && frame->grayscale[y - 1][x + 1] >= value) +
+            (x < (FRAME_WIDTH - 1) && y < (FRAME_WIDTH - 1) && frame->grayscale[x + 1][y + 1] >= value) +
+            (x > 0 && y < (FRAME_WIDTH - 1) && frame->grayscale[x - 1][y + 1] >= value));
 }
 
 void

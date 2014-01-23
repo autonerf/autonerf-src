@@ -27,8 +27,8 @@ control_init(void)
   tilt.min =  555092; //Tested; OK
   tilt.max = 2033333; //Tested; OK
 
-  servo_init(pan.io, pan.min);
-  servo_init(tilt.io, tilt.min);
+  servo_init(pan.io, ((pan.max - pan.min) / 2) + pan.min);
+  servo_init(tilt.io, ((tilt.max - tilt.min) / 2) + tilt.min);
 }
 
 void
@@ -38,6 +38,7 @@ control_set_pan(float position)
     if (position < 0.0)   { position = 0.0; }
 
     pan.position = position;
+    // printf("New position: %f\n", position);
 
     servo_set_position(pan.io, pan.position, pan.min, pan.max);
 }
@@ -49,6 +50,7 @@ control_set_tilt(float position)
     if (position < 0.0)   { position = 0.0; }
 
     tilt.position = position;
+    printf("New position: %f\n", position);
 
     servo_set_position(tilt.io, tilt.position, tilt.min, tilt.max);
 }
@@ -56,12 +58,16 @@ control_set_tilt(float position)
 void
 control_set_pan_delta(float delta)
 {
-    control_set_pan(pan.position + delta);
+    pan.position += delta;
+
+    control_set_pan(pan.position);
 }
 
 void
 control_set_tilt_delta(float delta)
 {
-    control_set_tilt(delta + delta);
+    tilt.position += delta;
+
+    control_set_tilt(tilt.position);
 }
 
